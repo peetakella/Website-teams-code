@@ -172,9 +172,17 @@ def make_http_get_request(trainingKey):
 def make_http_put_request(success: bool):
     global selected_user
     global current_class
+    global wound
+    if wound == 1: 
+        trainingType = 'Packing'
+    elif wound == 2:
+        trainingType = 'Tourniquet'
+    else:
+        trainingType = 'Pressure'
+
     # Function to make an HTTP request
     url = f"{api_link}/updateTrainingData"
-    data =  {'class_id': current_class.class_id, 'user_id': selected_user.user_id, 'x_list': timelist, 'y_list': pressurelist, 'bloodloss': blood_loss, 'passed': success}
+    data =  {'class_id': current_class.class_id, 'user_id': selected_user.user_id, 'x_list': timelist, 'y_list': pressurelist, 'bloodloss': blood_loss, 'type': trainingType}
 
     print(data)
     try:
