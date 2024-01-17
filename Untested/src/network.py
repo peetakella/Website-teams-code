@@ -64,6 +64,8 @@ class API_Netowrk:
     #===============================================================================
     # Method for making put request to API
     def make_http_put_request(self, success: bool):
+
+        #TODO: update for training type option
         if not (self.Class and self.User):
             raise Exception("Class and User must be set before making PUT request")
 
