@@ -15,7 +15,7 @@ from matplotlib.figure import Figure
 from tkinter import filedialog
 
 from events import *
-from ..main import simulation, network
+from ..main import simulation, network, stateObserver
 
 # Formating Constants
 largetitletext = 105
@@ -75,6 +75,7 @@ class Window:
             widget.destroy()
 
         self._state = state
+        stateObserver.state = state
 
 
     #==================================================================================================
@@ -97,8 +98,6 @@ class Window:
 
 
 
-
-    # TODO: defie this method
     # Data Retrieval Window
     def __DrawWindow2(self):
         x = []
@@ -214,7 +213,6 @@ class Window:
         button_scenario = Button(frame, text="Begin", command=self._destroy_UpdateState(8), font=("Arial", largetitletext), bg="firebrick3", fg="white", state='disabled')
         button_scenario.place(x=.345*w, y=.6*h, height=.15*h, width=.3*w)
 
-        # TODO: Update for the extra functionality regarding L and P variables in version 1.0
         button_quit = Button(frame, text="Home", command = self._destroy_UpdateState(1),  font=("Arial", largetitletext),bg="firebrick3",fg="white")
         button_quit.place(x=.345*w, y=.775*h, height=.15*h, width=.3*w)
 
@@ -381,7 +379,6 @@ class Window:
             selected_index = user_listbox.curselection()
             if selected_index:
                 # Change state to simulation
-                # TODO: implement multithreading and P and L variables
                 self._destroy_UpdateState(4)
 
         def request():

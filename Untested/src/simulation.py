@@ -35,14 +35,21 @@ class Simulation:
         self.blood_loss = []
         self.P = True # P is for "Program Running"
         self.timetostopthebleed = 1
+
+
         self.MAX_MOTOR_SPEED = 12000 # Initialize with default value
         self.LOAD_SENSOR_DATA = None
         self.LBS_DATA_SENSOR = None
+        self.SENSOR_ADDRESS = None
+
+
         self.upthreshold = 20
         self.errorthreshold = 40
         self.running_max = 0
         self.STB_timer = 0
         self.cycletime = 0
+
+
         self.DATA = None
         self.data1 = []
         self.data2 = []
@@ -129,6 +136,8 @@ class Simulation:
         dummy_command=0x00
         offset=1000"""
 
+        self.SENSOR_ADDRESS = 0x28 if screen.wound.get() == 1 else 0x27 if screen.wound.get() == 2 else 0x26
+
         if screen.wound.get() == 1:
             self.LOAD_SENSOR_DATA=bus.read_byte(0x28)#This apparently turns the load sensor on, only need it once
         elif screen.wound.get() == 2:
@@ -168,94 +177,36 @@ class Simulation:
     def __collect_Data(self):
         time.sleep(0.005)
         
-        match screen.wound.get():
-            case 1:
+        try :
+            bus.write_byte(self.SENSOR_ADDRESS, 0x00)#without this command, the status bytes go high on every other read
+            self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
+        except OSError:
+            time.sleep(.1)
+               
+            try :
+                self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
+            except OSError:
+                time.sleep(.1)
+                   
                 try :
-                    bus.write_byte(0x28,dummy_command)#without this command, the status bytes go high on every other read
-                    self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(0x28,0x00,2)     #This should turn the load sensor on, but doesn't.  
+                    self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
                 except OSError:
                     time.sleep(.1)
                
                     try :
-                        self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(0x28,0x00,2)     #This should turn the load sensor on, but doesn't.  
+                        self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
                     except OSError:
                         time.sleep(.1)
-                   
-                        try :
-                            self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(0x28,0x00,2)     #This should turn the load sensor on, but doesn't.  
-                        except OSError:
-                            time.sleep(.1)
-               
-                            try :
-                                self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(0x28,0x00,2)     #This should turn the load sensor on, but doesn't.  
-                            except OSError:
-                                time.sleep(.1)
                            
-                                try :
-                                    self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(0x28,0x00,2)     #This should turn the load sensor on, but doesn't.  
-                                except OSError:
-                                    self.stop_pump()
-                                    time.sleep(5)
-                                    quit()
+                        try :
+                            self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
+                        except OSError:
+                            self.stop_pump()
+                            time.sleep(5)
+                            quit()
 
-            case 2:
-                try :
-                    # Currently runnning sensor 1
-                    bus.write_byte(0x28,0x00)#without this command, the status bytes go high on every other read
-                    self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(0x27,0x00,2)     #This should turn the load sensor on, but doesn't.  
-                except OSError:
-                    time.sleep(.1)
-               
-                    try :
-                        self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(0x27,0x00,2)     #This should turn the load sensor on, but doesn't.  
-                    except OSError:
-                        time.sleep(.1)
-                   
-                        try :
-                            self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(0x27,0x00,2)     #This should turn the load sensor on, but doesn't.  
-                        except OSError:
-                            time.sleep(.1)
-               
-                            try :
-                                self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(0x27,0x00,2)     #This should turn the load sensor on, but doesn't.  
-                            except OSError:
-                                time.sleep(.1)
                            
-                                try :
-                                    self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(0x27,0x00,2)     #This should turn the load sensor on, but doesn't.  
-                                except OSError:
-                                    self.stop_pump()
-                                    time.sleep(5)
-                                    quit()
-
-            case _:
-                try:
-                    bus.write_byte(0x26,0x00)#without this command, the status bytes go high on every other read
-                    self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(0x26,0x00,2)     #This should turn the load sensor on, but doesn't.  
-                except OSError:
-                    time.sleep(.1)
-               
-                    try :
-                        self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(0x26,0x00,2)     #This should turn the load sensor on, but doesn't.  
-                    except OSError:
-                        time.sleep(.1)
-                   
-                        try :
-                            self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(0x26,0x00,2)     #This should turn the load sensor on, but doesn't.  
-                        except OSError:
-                            time.sleep(.1)
-               
-                            try :
-                                self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(0x26,0x00,2)     #This should turn the load sensor on, but doesn't.  
-                            except OSError:
-                                time.sleep(.1)
-                           
-                                try :
-                                    self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(0x26,0x00,2)     #This should turn the load sensor on, but doesn't.  
-                                except OSError:
-                                    self.stop_pump()
-                                    time.sleep(5)
-                                    quit()
+   
 
     #========================================================================
     # Data Processing
@@ -266,7 +217,7 @@ class Simulation:
         self.LBS_DATA_SENSOR = 1 * self.LBS_DATA_SENSOR #TODO: is this necessary?
         if self.LBS_DATA_SENSOR < 0:
             self.LBS_DATA_SENSOR = 0
-        elif self.LBS_DATA_SENSOR > 0 and self.LBS_DATA_SENSOR <= self.upthreshold:  #upthreshpld line 300  
+        elif self.LBS_DATA_SENSOR > 0 and self.LBS_DATA_SENSOR <= self.upthreshold: 
             self.STB_timer=0
         elif self.LBS_DATA_SENSOR > self.upthreshold and self.LBS_DATA_SENSOR <= self.errorthreshold:
             self.LBS_DATA_SENSOR = self.upthreshold
@@ -331,7 +282,7 @@ class Simulation:
     def __checkEnd(self):
          if self.STB_timer >= self.timetostopthebleed:
             self.stop_pump()
-            self.root.event_generate("<<event4>>", state=str(1))
+            self.root.event_generate("<<event4>>", state=str(1)) #TODO: check documentation to ensure worker thread is not handling event
             time.sleep(5)
             quit()
 
@@ -346,8 +297,6 @@ class Simulation:
         self.DATA = self.LBS_DATA_SENSOR
 
         with open(self.filename, "a") as file:
-            #print('enter writefile')
-            #for d1, d2, d3 in zip(data1, data2, data3):
             file.write(f"{self.totaltime}\t{self.BloodLost}\t{self.DATA}\n")
 
     #========================================================================
@@ -408,7 +357,6 @@ class Simulation:
         rounded_DATA = round(self.DATA, 6)  # Rounds to 8 decimal places
         big_DATA = rounded_DATA*1000000
         int_DATA = int(big_DATA)
-        #print('big_DATA:',int_DATA)
        
              
         root.event_generate("<<event1>>", state=str(int_BloodLost))    
