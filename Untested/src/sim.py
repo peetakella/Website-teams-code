@@ -16,8 +16,6 @@ import smbus
 import math
 
 
-from main import audio, broadCastEvent
-
 sound1 = "/home/stopthebleed/StoptheBleed/Sounds/30seccondscream.mp3"
 sound2 = "/home/stopthebleed/StoptheBleed/Sounds/30seccondscream.mp3"
 sound3 = "/home/stopthebleed/StoptheBleed/Sounds/30seccondscream.mp3"
@@ -27,8 +25,10 @@ soundtimer = 0
 
 class Simulation:
     # Initializer will eventually take parameters from simulation type`
-    def __init__(self):
-
+    def __init__(self, audio, callback, generator):
+        self.broadCastEvent = callback
+        self.generate = generator
+        self.audio = audio
         self.blood = None
         self.wound = None
         self.sound = None
@@ -70,12 +70,15 @@ class Simulation:
         self.junction = 4 
         self.p = None
 
-        self.tci3 = 0
+        self.tic1 = None
+        self.tic3 = 0
         self.tic4 = None
         self.tic5 = None
         self.totaltime = 0
 
         self.BloodLost = 0
+
+        self.bus = None
 
         #TODO Throw error codes for when and if there is something that can't be in a file name and have them try again
         self.filename = (f"A - Previous Trial.txt")
@@ -89,6 +92,8 @@ class Simulation:
 
 
         #tic3 = 0 #timestamp
+
+        self.tic1 = time.perf_counter()
 
         if self.blood.get() == 1:     #2:30 also known as high
             self.MAX_MOTOR_SPEED = 14000
@@ -110,7 +115,7 @@ class Simulation:
         self.ratio = (self.MAX_MOTOR_SPEED - 100) / (self.upthreshold - 0)
 
         #BloodLost = 0
-        bus = smbus.SMBus(1) #I2C channel 1 is connected to the GPIO pins 2 (SDA) and 4 (SCL)
+        self.bus = smbus.SMBus(1) #I2C channel 1 is connected to the GPIO pins 2 (SDA) and 4 (SCL)
            
         channel = 1          #select channel
         #set up digital io
@@ -143,11 +148,11 @@ class Simulation:
         self.SENSOR_ADDRESS = 0x28 if self.wound.get() == 1 else 0x27 if self.wound.get() == 2 else 0x26
 
         if self.wound.get() == 1:
-            self.LOAD_SENSOR_DATA=bus.read_byte(0x28)#This apparently turns the load sensor on, only need it once
+            self.LOAD_SENSOR_DATA=self.bus.read_byte(0x28)#This apparently turns the load sensor on, only need it once
         elif self.wound.get() == 2:
-            self.LOAD_SENSOR_DATA=bus.read_byte(0x27)
+            self.LOAD_SENSOR_DATA=self.bus.read_byte(0x27)
         elif self.wound.get() == 3:  
-            self.LOAD_SENSOR_DATA=bus.read_byte(0x26)
+            self.LOAD_SENSOR_DATA=self.bus.read_byte(0x26)
         self.LBS_DATA_SENSOR=0
 
         # Run Simulation
@@ -158,6 +163,7 @@ class Simulation:
     # NOTE: primary method
     # Method to run simulation
     def run(self):
+        print("simulation running")
         self.__collect_Data()
         self.__process_Data()
         self.__setMotorHz()
@@ -182,28 +188,28 @@ class Simulation:
         time.sleep(0.005)
         
         try :
-            bus.write_byte(self.SENSOR_ADDRESS, 0x00)#without this command, the status bytes go high on every other read
-            self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
+            self.bus.write_byte(self.SENSOR_ADDRESS, 0x00)#without this command, the status bytes go high on every other read
+            self.LOAD_SENSOR_DATA=self.bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
         except OSError:
             time.sleep(.1)
                
             try :
-                self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
+                self.LOAD_SENSOR_DATA=self.bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
             except OSError:
                 time.sleep(.1)
                    
                 try :
-                    self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
+                    self.LOAD_SENSOR_DATA=self.bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
                 except OSError:
                     time.sleep(.1)
                
                     try :
-                        self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
+                        self.LOAD_SENSOR_DATA=self.bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
                     except OSError:
                         time.sleep(.1)
                            
                         try :
-                            self.LOAD_SENSOR_DATA=bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
+                            self.LOAD_SENSOR_DATA=self.bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
                         except OSError:
                             self.stop_pump()
                             time.sleep(5)
@@ -271,12 +277,12 @@ class Simulation:
     #========================================================================
     # Calculate Blood Loss
     def __calculateBloodLoss(self):
-        Flow_Rate = 0.2643*math.log(Hz3)-1.5221 #Liters per min
+        Flow_Rate = 0.2643*math.log(self.Hz)-1.5221 #Liters per min
         self.BloodLost= self.BloodLost + (self.cycletime * Flow_Rate / 60)
 
         if self.BloodLost >= 3:
             self.stop_pump()
-            broadCastEvent(0)
+            self.broadCastEvent(0)
             time.sleep(5)
             #quit() #TODO end thread and go back to home
 
@@ -318,34 +324,34 @@ class Simulation:
         if self.DATA >= 20 and soundtimer == 0:
             timestamp2 = time.perf_counter()
             if Falloffcount in [0,3,6,9,12]:
-                audio.music.stop()
-                audio.music.load("/home/stopthebleed/StoptheBleed/Sounds/30seccondscream.mp3")
-                audio.music.set_volume(1.0)
-                audio.music.play()                    
+                self.audio.music.stop()
+                self.audio.music.load("/home/stopthebleed/StoptheBleed/Sounds/30seccondscream.mp3")
+                self.audio.music.set_volume(1.0)
+                self.audio.music.play()                    
                    
             elif Falloffcount in [1,4,7,10,13]:
-                audio.music.stop()
-                audio.music.load("/home/stopthebleed/StoptheBleed/Sounds/scream3.mp3")
-                audio.music.set_volume(1.0)
-                audio.music.play()
+                self.audio.music.stop()
+                self.audio.music.load("/home/stopthebleed/StoptheBleed/Sounds/scream3.mp3")
+                self.audio.music.set_volume(1.0)
+                self.audio.music.play()
                  
             else:
-                audio.music.stop()
-                audio.music.load("/home/stopthebleed/StoptheBleed/Sounds/getofflong.mp3")
-                audio.music.set_volume(1.0)
-                audio.music.play()
+                self.audio.music.stop()
+                self.audio.music.load("/home/stopthebleed/StoptheBleed/Sounds/getofflong.mp3")
+                self.audio.music.set_volume(1.0)
+                self.audio.music.play()
                    
         if self.DATA < 20 and self.DATA > 10 and soundtimer != 0:
 
             Falloffcount += 1
-            audio.music.stop()
-            audio.music.load("/home/stopthebleed/StoptheBleed/Sounds/Moan1.mp3")
-            audio.music.set_volume(0.5)
-            audio.music.play()
+            self.audio.music.stop()
+            self.audio.music.load("/home/stopthebleed/StoptheBleed/Sounds/Moan1.mp3")
+            self.audio.music.set_volume(0.5)
+            self.audio.music.play()
             timestamp2 = 0
            
         if self.DATA < 10 :
-            audio.music.stop()
+            self.audio.music.stop()
 
     #========================================================================
     # GUI Data Pass
@@ -362,7 +368,10 @@ class Simulation:
         big_DATA = rounded_DATA*1000000
         int_DATA = int(big_DATA)
        
-             
+            
+        self.generate(int_BloodLost, int_DATA, int_totaltime)
+
+        """
         root.event_generate("<<event1>>", state=str(int_BloodLost))    
         root.event_generate("<<event2>>", state=str(int_DATA))
-        root.event_generate("<<event3>>", state=str(int_totaltime))  
+        root.event_generate("<<event3>>", state=str(int_totaltime))"""

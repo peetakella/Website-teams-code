@@ -72,9 +72,8 @@ class Window:
         else:
             raise ValueError("Invalid State")
 
+        
         self._root.mainloop()
-
-
         # The below code is more optimal but requires python 3.10 >
         """
         match self._state:
@@ -177,10 +176,17 @@ class Window:
         canvas.get_tk_widget().grid(column = 1, row = 1)
 
 
+    def updateOptions(self):
+        print("updating")
+        simulation.blood = self._blood
+        simulation.wound = self._wound
+        simulation.sound = self._sound
+
 
     # Simulation SetupWindow
     def __DrawWindow3(self):
-        button_scenario =  Button(self._frame, text="Begin", command= lambda: [self._destroy_UpdateState(8)], font=("Arial", largetitletext), bg="firebrick3", fg="white", state='disabled')
+        #TODO: change to state 8 once server issues are resolved
+        button_scenario =  Button(self._frame, text="Begin", command= lambda: [self._destroy_UpdateState(4)], font=("Arial", largetitletext), bg="firebrick3", fg="white", state='disabled')
 
         def updateScenarioButtonState():
             button_scenario['state'] = 'normal' if self._wound and self._blood and self._sound else 'disabled'
@@ -243,7 +249,8 @@ class Window:
         checkbox_off.grid(row=1, column=1,padx=0,  pady=0)
 
         #Button to enter scenario in middle frame
-        button_scenario = Button(self._frame, text="Begin", command= lambda: [self._destroy_UpdateState(8)], font=("Arial", largetitletext), bg="firebrick3", fg="white", state='disabled')
+        # TODO: change to state 8
+        button_scenario = Button(self._frame, text="Begin", command= lambda: [self.updateOptions(), self._destroy_UpdateState(4)], font=("Arial", largetitletext), bg="firebrick3", fg="white", state='disabled')
         button_scenario.place(x=.345*w, y=.6*h, height=.15*h, width=.3*w)
 
         button_quit = Button(self._frame, text="Home", command = lambda: [self._destroy_UpdateState(1)],  font=("Arial", largetitletext),bg="firebrick3",fg="white")
@@ -333,9 +340,9 @@ class Window:
             line_20ref, = ax.plot(simulation.timelist, simulation.ma_xlist, label='Target Pressure', linewidth=5, color = 'r' )
             canvas_graph.draw()
 
-        root.bind("<<event1>>",Update_Sim_Window)
-        root.bind("<<event2>>",Update_pressure)
-        root.bind("<<event3>>",Update_time)   
+        self._root.bind("<<event1>>",Update_Sim_Window)
+        self._root.bind("<<event2>>",Update_pressure)
+        self._root.bind("<<event3>>",Update_time)   
 
 
     # Failed Simulation Window

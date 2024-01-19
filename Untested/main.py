@@ -17,19 +17,28 @@ simulation = None
 stateObserver = None
 audio = pygame.mixer.init()
 
+#TODO: figure out way to generate events in simulation without importing currently doesn't work
+
 #=================================================================================================
 # Seperates simulation object from needing a circular import
 def broadCastEvent(state):
     screen._root.event_generate("<<event4>>", state=str(state))
+
+#================================================================================================
+# Generates events without circular import
+def eventGeneration(blood, data, time):
+    screen._root.event_generate("<<event1>>", state=str(blood))
+    screen._root.event_generate("<<event2>>", state=str(data))
+    screen._root.event_generate("<<event3>>", state=str(time))
 
 # Local Imports
 from src.observer import Observer
 stateObserver = Observer()
 from src.api import *
 network = API_Network("http://10.187.243.199:3000")
-#from src.events import *
+from src.sim import Simulation
+simulation = Simulation(audio, broadCastEvent, eventGeneration)
 from src.gui import *
-from src.simulation import Simulation
 
 
 
@@ -43,20 +52,19 @@ def main():
 # Begins multithreading called when osberver state == 4
 def simulationBegin(observed_state):
 
+    if observed_state == 4:
+        print("worker started")
+        worker = threading.Thread(target=simulation.begin())
+        worker.daemon = True
+        worker.start()
+
     screen.updateWindow()
 
-    if observed_state != 4:
-        return
-
-    worker = threading.Thread(target=simulation.begin())
-    worker.daemon = True
-    worker.start()
 
 
 #==================================================================================================
 # Start program execution
 if __name__ == "__main__":
-    simulation = Simulation()
     screen = Window()
     stateObserver.bind_to(simulationBegin)
     main()
