@@ -7,11 +7,9 @@ version:        0.1
 ============================================================================================
 """
 
-from ..main import screen, simulation
-
 class Observer:
     def __init__(self):
-        self._state = screen._state
+        self._state = 1
         self._observers = []
 
     @property

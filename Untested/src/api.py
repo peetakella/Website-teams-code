@@ -34,7 +34,7 @@ class TrainingClass:
 
 #===============================================================================
 # Primary Class for network management
-class API_Netowrk:
+class API_Network:
 
     # Class Intializer
     def __init__(self, api_address):
@@ -44,7 +44,7 @@ class API_Netowrk:
 
     #===============================================================================
     # Method for making request to the API
-    def make_http_get_requests(self, trainingKey):
+    def make_http_get_request(self, trainingKey):
         url = f"{self.__address}/classUsers"
         data = {'trainingKey': trainingKey}
 

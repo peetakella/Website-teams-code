@@ -8,14 +8,15 @@ Version:        2.0
 """
 
 import tkinter as tk
+from tkinter import *
 from tkinter import ttk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from tkinter import filedialog
 
-from events import *
-from ..main import simulation, network, stateObserver
+from src.events import *
+from main import simulation, network, stateObserver
 
 # Formating Constants
 largetitletext = 105
@@ -24,6 +25,8 @@ smalltitletext = 70
 largetext=55
 mediumtext = 30
 smalltext = 25
+w = 1920
+h = 1080
 
 
 #==================================================================================================
@@ -31,24 +34,49 @@ smalltext = 25
 class Window:
     def __init__(self):
         self._state = 1
-        self._root = tk.Tk()
+        self._root = Tk()
 
         # Simulation Options
-        self._wound = None
-        self._blood = None
-        self._sound = None
+        self._wound = IntVar()
+        self._blood = IntVar()
+        self._sound = IntVar()
 
         # Initialize Window
         self._root.title("Better Bleeding Control")
-        self._root.configure(background="gray75")
-        self._root.geometry("1920x1080") # Using size from version one
-        self._frame = ttk.Frame(root)
-        self._frame.pack(expand=True, fill.BOTH)
-        self._root.bind("<<event4>>",events.end)
+        self._root.configure(bg="gray75")
+        self._root.geometry("{}x{}".format(w, h)) # Using size from version one
+        self._frame = Frame(self._root)
+        self._frame.pack(expand=True, fill=BOTH)
+        self._root.bind("<<event4>>",end)
 
     #==================================================================================================
     # Method called in main loop
     def updateWindow(self):
+
+        if self._state == 1:
+            self.__DrawWindow1()
+        elif self._state == 2:
+            self.__DrawWindow2()
+        elif self._state == 3:
+            self.__DrawWindow3()
+        elif self._state == 4:
+            self.__DrawWindow4()
+        elif self._state == 5:
+            self.__DrawWindow5()
+        elif self._state == 6:
+            self.__DrawWindow6()
+        elif self._state == 7:
+            self.__DrawWindow7()
+        elif self._state == 8:
+            self.__DrawWindow8()
+        else:
+            raise ValueError("Invalid State")
+
+        self._root.mainloop()
+
+
+        # The below code is more optimal but requires python 3.10 >
+        """
         match self._state:
             case 1:
                 self.__DrawWindow1()
@@ -67,7 +95,7 @@ class Window:
             case 8:
                 self.__DrawWindow8()
             case _:
-                raise ValueError("Invalid State")
+                raise ValueError("Invalid State")"""
 
     # Destroy's previous window and changes state to new one to be drawn
     def _destroy_UpdateState(self, state):
@@ -83,22 +111,27 @@ class Window:
 
     # Home Window
     def __DrawWindow1(self):
-        frame1 = LabelFrame(frame, pady=25, fg="black", bg="gray75")
+        
+
+        frame1 = LabelFrame(self._frame, pady=25, fg="black", bg="gray75")
+
         frame1.place(x=.025*w, y=.025*h, height=.2*h, width=.95*w)
+
 
         # Add a label at the top of the window
         label_home = Label(frame1, text="Hemorrhage Control Trainer", font=("Arial", largetitletext), fg="black", bg="gray75")
         label_home.pack(fill = X)
 
+
+
         # Add two buttons underneath the label of home page
-        button_scenario = Button(frame, text="Choose\nScenario", command = self._destroy_UpdateState(3), bg="firebrick3",fg="white",  font=("Arial", largetitletext), padx=10, pady=200)
+        button_scenario = Button(self._frame, text="Choose\nScenario", command = lambda: [self._destroy_UpdateState(3)], bg="firebrick3",fg="white",  font=("Arial", largetitletext), padx=10, pady=200)
         button_scenario.place(x=.025*w, y=.25*h, height=.675*h, width=.47*w)
-        button_retrieve = Button(frame, text="Retrieve\nData", command = self._destroy_UpdateState(2), bg="firebrick3",fg="white", font=("Arial", largetitletext), padx=10, pady=200)
+        button_retrieve = Button(self._frame, text="Retrieve\nData", command = lambda: [self._destroy_UpdateState(2)], bg="firebrick3",fg="white", font=("Arial", largetitletext), padx=10, pady=200)
         button_retrieve.place(x=.5025*w, y=.25*h, height=.675*h, width=.47*w)
 
-
-
     # Data Retrieval Window
+    # TODO: acrtually draw graph
     def __DrawWindow2(self):
         x = []
         m = []
@@ -119,19 +152,19 @@ class Window:
             m.clear()
             return filename
 
-        frame1 = LabelFrame(frame, padx= 50, pady= 10, fg = 'black', bg = 'grey75')
+        frame1 = LabelFrame(self._frame, padx= 50, pady= 10, fg = 'black', bg = 'grey75')
         frame1.grid(row= 1, column= 1, columnspan= 1, padx= 25, pady= 20)
 
-        pathh = Entry(frame)
+        pathh = Entry(self._frame)
         pathh.grid(column = 0, row = 3)
 
-        label_file_explorer = Label(frame, text = "File Explorer using Tkinter", width = 100, height = 4, fg = "blue")
+        label_file_explorer = Label(self._frame, text = "File Explorer using Tkinter", width = 100, height = 4, fg = "blue")
         label_file_explorer.grid(column = 0, row = 0, columnspan= 2)
          
-        button_explore = Button(frame, text = "Browse Files", command = browseFiles)
+        button_explore = Button(self._frame, text = "Browse Files", command = browseFiles)
         button_explore.grid(column = 0, row = 4)  
 
-        button_exit = Button(frame, text = "Exit", command = exit)
+        button_exit = Button(self._frame, text = "Exit", command = exit)
         button_exit.grid(column = 0,row = 5)
 
         fig = Figure(figsize=(15, 8))
@@ -147,7 +180,7 @@ class Window:
 
     # Simulation SetupWindow
     def __DrawWindow3(self):
-        button_scenario =  Button(self._frame, text="Begin", command=self._destroy_UpdateState(8), font=("Arial", largetitletext), bg="firebrick3", fg="white", state='disabled')
+        button_scenario =  Button(self._frame, text="Begin", command= lambda: [self._destroy_UpdateState(8)], font=("Arial", largetitletext), bg="firebrick3", fg="white", state='disabled')
 
         def updateScenarioButtonState():
             button_scenario['state'] = 'normal' if self._wound and self._blood and self._sound else 'disabled'
@@ -162,7 +195,7 @@ class Window:
 
 
         #Add Title frame
-        framet = LabelFrame(frame,fg="black", bg="gray75")
+        framet = LabelFrame(self._frame,fg="black", bg="gray75")
         framet.place(x=.025*w, y=.025*h, height=.2*h, width=.95*w)    
         # Add a label at the top of the window
         label_scenario = Label(framet, text="Choose Scenario", font=("Arial", largetitletext), fg="black", bg="gray75", pady = 15)
@@ -170,13 +203,13 @@ class Window:
 
         #Add the Frames
         #Add left frame
-        frameL = LabelFrame(frame,bg="firebrick3", fg="white")
+        frameL = LabelFrame(self._frame,bg="firebrick3", fg="white")
         frameL.place(x=.015*w, y=.25*h, height=.675*h, width=.3*w)    
         #Add Middle frame
-        frameM = LabelFrame(frame, padx=50, pady=5,bg="firebrick3", fg="white")
+        frameM = LabelFrame(self._frame, padx=50, pady=5,bg="firebrick3", fg="white")
         frameM.place(x=.345*w, y=.25*h, height=.325*h, width=.3*w)            
         #Add Right Frame
-        frameR = LabelFrame(frame, padx=50, pady=5,bg="firebrick3", fg="white")
+        frameR = LabelFrame(self._frame, padx=50, pady=5,bg="firebrick3", fg="white")
         frameR.place(x=.675*w, y=.25*h, height=.675*h, width=.3*w)
 
         # Add the left section with wound choice checkboxes
@@ -185,15 +218,15 @@ class Window:
 
         # Add the checkboxes for wound choice
         #wound = 1  #1=upper and 2=lower  
-        checkbox_junction = Radiobutton(frameL, text="Packing",font=("Arial", smalltitletext), variable = wound,
+        checkbox_junction = Radiobutton(frameL, text="Packing",font=("Arial", smalltitletext), variable = self._wound,
                                         value=1,bg="firebrick4", fg="white", selectcolor="firebrick3",padx=65, indicatoron=0,bd=10)
 
         checkbox_junction.grid(row=1, column=0,padx=40, pady=20)
-        checkbox_armT = Radiobutton(frameL, text="Tourniquet",font=("Arial", smalltitletext), variable = wound,
+        checkbox_armT = Radiobutton(frameL, text="Tourniquet",font=("Arial", smalltitletext), variable = self._wound,
                                     value=2,bg="firebrick4", fg="white", selectcolor="firebrick3",padx=11, indicatoron=0,bd=10)
 
         checkbox_armT.grid(row=2, column=0,padx=40,pady=20)
-        checkbox_armDP = Radiobutton(frameL, text="Pressure",font=("Arial", smalltitletext), variable = wound,
+        checkbox_armDP = Radiobutton(frameL, text="Pressure",font=("Arial", smalltitletext), variable = self._wound,
                                      value=3,bg="firebrick4", fg="white", selectcolor="firebrick3",padx=45, indicatoron=0,bd=10)
         checkbox_armDP.grid(row=3, column=0,padx=40,pady=20)
 
@@ -202,18 +235,18 @@ class Window:
         label_sound.grid(row=0, column=0,columnspan=2, pady=0)    
         # Add the sound toggle switch
         #sound = 2
-        checkbox_on = Radiobutton(frameM, text="On",font=("Arial", mediumtitletext), variable=sound,
+        checkbox_on = Radiobutton(frameM, text="On",font=("Arial", mediumtitletext), variable=self._sound,
                                   value=1,bg="firebrick4", fg="white", selectcolor="firebrick3",padx=10, indicatoron=0,bd=10,)
         checkbox_on.grid(row=1, column=0,padx=0, pady=0)
-        checkbox_off = Radiobutton(frameM, text="Off",font=("Arial", mediumtitletext), variable=sound,
+        checkbox_off = Radiobutton(frameM, text="Off",font=("Arial", mediumtitletext), variable=self._sound,
                                    value=2,bg="firebrick4", fg="white", selectcolor="firebrick3",padx=5, indicatoron=0,bd=10)
         checkbox_off.grid(row=1, column=1,padx=0,  pady=0)
 
         #Button to enter scenario in middle frame
-        button_scenario = Button(frame, text="Begin", command=self._destroy_UpdateState(8), font=("Arial", largetitletext), bg="firebrick3", fg="white", state='disabled')
+        button_scenario = Button(self._frame, text="Begin", command= lambda: [self._destroy_UpdateState(8)], font=("Arial", largetitletext), bg="firebrick3", fg="white", state='disabled')
         button_scenario.place(x=.345*w, y=.6*h, height=.15*h, width=.3*w)
 
-        button_quit = Button(frame, text="Home", command = self._destroy_UpdateState(1),  font=("Arial", largetitletext),bg="firebrick3",fg="white")
+        button_quit = Button(self._frame, text="Home", command = lambda: [self._destroy_UpdateState(1)],  font=("Arial", largetitletext),bg="firebrick3",fg="white")
         button_quit.place(x=.345*w, y=.775*h, height=.15*h, width=.3*w)
 
         # Add the right section with bleed out time checkboxes
@@ -221,13 +254,13 @@ class Window:
         label_bleed.grid(row=0, column=0, pady=0)
         # Add the checkboxes for bleed out time
         #blood = 3
-        checkbox_high = Radiobutton(frameR, text="High",font=("Arial", mediumtitletext), variable=blood,
+        checkbox_high = Radiobutton(frameR, text="High",font=("Arial", mediumtitletext), variable=self._blood,
                                     value=1,bg="firebrick4", fg="white", selectcolor="firebrick3",padx=110, indicatoron=0,bd=10)
         checkbox_high.grid(row=1, column=0,padx=0, pady=10)
-        checkbox_low = Radiobutton(frameR, text="Low",font=("Arial", mediumtitletext), variable=blood,
+        checkbox_low = Radiobutton(frameR, text="Low",font=("Arial", mediumtitletext), variable=self._blood,
                                    value=2,bg="firebrick4", fg="white", selectcolor="firebrick3",padx=125, indicatoron=0,bd=10)
         checkbox_low.grid(row=2, column=0,padx=0,  pady=10)
-        checkbox_off = Radiobutton(frameR, text="Off",font=("Arial", mediumtitletext), variable=blood,
+        checkbox_off = Radiobutton(frameR, text="Off",font=("Arial", mediumtitletext), variable=self._blood,
                                    value=3,bg="firebrick4", fg="white", selectcolor="firebrick3",padx=150, indicatoron=0,bd=10)
         checkbox_off.grid(row=3, column=0,padx=0,  pady=10)
 
@@ -235,9 +268,9 @@ class Window:
             
     # Simulation Window
     def __DrawWindow4(self):
-        bleedoutbarframe = LabelFrame(frame,bg="firebrick3", fg="white")
+        bleedoutbarframe = LabelFrame(self._frame,bg="firebrick3", fg="white")
         bleedoutbarframe.grid(row=0, column=0)
-        graphframe = LabelFrame(frame,bg="firebrick3", fg="white")
+        graphframe = LabelFrame(self._frame,bg="firebrick3", fg="white")
         graphframe.grid(row=0, column=1)
        
         # Add the frame that the bleedout bar will go in
@@ -268,7 +301,7 @@ class Window:
         canvas_graph.draw()
         canvas_graph.get_tk_widget().grid(row=1,column=0)
 
-         def Update_Sim_Window(event1):
+        def Update_Sim_Window(event1):
             #print('update sim window')
             ##print(event1.state)    
             big_BloodLost1 = float(event1.state)
@@ -308,41 +341,41 @@ class Window:
     # Failed Simulation Window
     def __drawWindow5(self):
         #Add Title 
-        frame1 = LabelFrame(frame, pady=25, fg="black", bg="gray75")
+        frame1 = LabelFrame(self._frame, pady=25, fg="black", bg="gray75")
         frame1.place(x=.025*w, y=.025*h, height=.2*h, width=.95*w)
         # Add a label at the top of the window
         label_home = Label(frame1, text="You Failed", font=("Arial", largetitletext), fg="black", bg="gray75")
         label_home.pack(fill = X)
         # Add two buttons underneath the label of home page
 
-        button_scenario = Button(frame, text="View\nGraph", command = self._destory_UpdateState(7), bg="firebrick3",fg="white",  font=("Arial", largetitletext), padx=10, pady=200)
+        button_scenario = Button(self._frame, text="View\nGraph", command = lambda: [self._destory_UpdateState(7)], bg="firebrick3",fg="white",  font=("Arial", largetitletext), padx=10, pady=200)
         button_scenario.place(x=.025*w, y=.25*h, height=.675*h, width=.47*w)
-        button_retrieve = Button(frame, text="Select\nNew User", command = self._destory_UpdateState(8), bg="firebrick3",fg="white", font=("Arial", largetitletext), padx=10, pady=200)
+        button_retrieve = Button(self._frame, text="Select\nNew User", command = lambda: [self._destory_UpdateState(8)], bg="firebrick3",fg="white", font=("Arial", largetitletext), padx=10, pady=200)
         button_retrieve.place(x=.5025*w, y=.25*h, height=.675*h, width=.47*w)
 
 
     # Successful Simulation Window
     def __DrawWindow6(self):
         #Add Title frame        
-        frame1 = LabelFrame(frame, pady=25, fg="black", bg="gray75")
+        frame1 = LabelFrame(self._frame, pady=25, fg="black", bg="gray75")
         frame1.place(x=.025*w, y=.025*h, height=.2*h, width=.95*w)
         # Add a label at the top of the window
         label_home = Label(frame1, text="You Stopped The Bleed", font=("Arial", largetitletext), fg="black", bg="gray75")
         label_home.pack(fill = X)
         # Add two buttons underneath the label of home page
 
-        button_scenario = Button(frame, text="View\nGraph", command = self._destroy_UpdateState(7), bg="firebrick3", fg="white", font=("Arial", largetitletext), padx=10, pady=200)
+        button_scenario = Button(self._frame, text="View\nGraph", command = lambda: [self._destroy_UpdateState(7)], bg="firebrick3", fg="white", font=("Arial", largetitletext), padx=10, pady=200)
         button_scenario.place(x=.025*w, y=.25*h, height=.675*h, width=.47*w)
-        button_retrieve = Button(frame, text="Select\nNew User", command = self._destroy_UpdateState(8), bg="firebrick3",fg="white", font=("Arial", largetitletext), padx=10, pady=200)
+        button_retrieve = Button(self._frame, text="Select\nNew User", command = lambda: [self._destroy_UpdateState(8)], bg="firebrick3",fg="white", font=("Arial", largetitletext), padx=10, pady=200)
         button_retrieve.place(x=.5025*w, y=.25*h, height=.675*h, width=.47*w)
 
 
     # Completed Simulation Graph Window
     def __DrawWindow7(self):
-        button_home = Button(frame, text="Select\nNew User", command = self._destroy_UpdateState(8), bg="firebrick3",fg="white", font=("Arial", largetext))
+        button_home = Button(self._frame, text="Select\nNew User", command = lambda: [self._destroy_UpdateState(8)], bg="firebrick3",fg="white", font=("Arial", largetext))
         button_home.place(x=0, y=.4*h, height=.2*h, width=.125*w)
         #Create graph frame
-        frame2 = Frame(frame, pady=25, bg="gray75")
+        frame2 = Frame(self._frame, pady=25, bg="gray75")
         frame2.place(x=.125*w, y=0, height=h, width=.85*w)
        
         #Add the frame that the graph will go in
@@ -407,14 +440,14 @@ class Window:
                 self._destroy_UpdateState(7)
 
         #Add Title frame
-        framet = LabelFrame(frame,fg="black", bg="gray75")
+        framet = LabelFrame(self._frame,fg="black", bg="gray75")
         framet.place(x=.025*w, y=.025*h, height=.2*h, width=.95*w)    
         # Add a label at the top of the window
         label_scenario = Label(framet, text="Connect to Class", font=("Arial", largetitletext), fg="black", bg="gray75", pady = 15)
         label_scenario.pack(fill = X)
 
         # Add left frame
-        frameL = LabelFrame(frame, bg="firebrick3", fg="white")
+        frameL = LabelFrame(self._frame, bg="firebrick3", fg="white")
         frameL.place(x=.015 * w, y=.25 * h, height=.675 * h, width=.3 * w)
 
         label_input_field = Label(frameL, text="Class Key:", bg="firebrick3", fg="white", font=("Arial", smalltitletext), padx=40)
@@ -425,28 +458,28 @@ class Window:
         input_entry.grid(row=1, column=0, padx=40, pady=20)
 
         # Button to make HTTP Request (or perform desired action)
-        button_make_request = Button(frameL, text="Connect", font=("Arial", smalltitletext), bg="firebrick4", fg="white", command=request())
+        button_make_request = Button(frameL, text="Connect", font=("Arial", smalltitletext), bg="firebrick4", fg="white", command=lambda: request())
         button_make_request.grid(row=2, column=0, padx=40, pady=20)# Button to go back to the home window
 
-        button_start = Button(frame, text="Start", command=start_simulation, font=("Arial", largetext), bg="firebrick3", fg="white", state='disabled')
+        button_start = Button(self._frame, text="Start", command=start_simulation, font=("Arial", largetext), bg="firebrick3", fg="white", state='disabled')
         button_start.place(x=.345*w, y=.325*h, height=.15*h, width=.3*w)
        
-        button_back = Button(frame, text="Go Back", command=self._destroy_UpdateState(3), bg="firebrick3", fg="white", font=("Arial", largetext))
+        button_back = Button(self._frame, text="Go Back", command= lambda: [self._destroy_UpdateState(3)], bg="firebrick3", fg="white", font=("Arial", largetext))
         button_back.place(x=.345*w, y=.5*h, height=.15*h, width=.3*w)
 
         # Button to go back to the home window
-        button_home = Button(frame, text="Home", command=self._destroy_UpdateState(1), bg="firebrick3", fg="white", font=("Arial", largetext))
+        button_home = Button(self._frame, text="Home", command= lambda: [self._destroy_UpdateState(1)], bg="firebrick3", fg="white", font=("Arial", largetext))
         button_home.place(x=.345*w, y=.675*h, height=.15*h, width=.3*w)
 
 
         # Scrollable Listbox to display users
-        user_listbox = Listbox(frame, selectmode=SINGLE, font=("Arial", mediumtext), bg="firebrick4", fg="white", bd=10)
+        user_listbox = Listbox(self._frame, selectmode=SINGLE, font=("Arial", mediumtext), bg="firebrick4", fg="white", bd=10)
         user_listbox.place(x=.675*w, y=.25*h, height=.5*h, width=.3*w)
        
         # Bind the function to the Listbox selection event
         user_listbox.bind('<<ListboxSelect>>', lambda event: update_button_states())
 
-        button_view_graph = Button(frame, text="View Graph", command=view_graph(), font=("Arial", largetext), bg="firebrick3", fg="white", state='disabled')
+        button_view_graph = Button(self._frame, text="View Graph", command=view_graph, font=("Arial", largetext), bg="firebrick3", fg="white", state='disabled')
         button_view_graph.place(x=.675 * w, y=.775 * h, height=.15*h, width=.3*w)
        
         populate_listbox()

@@ -16,7 +16,7 @@ import smbus
 import math
 
 
-from ..main import screen,audio
+from main import audio, broadCastEvent
 
 sound1 = "/home/stopthebleed/StoptheBleed/Sounds/30seccondscream.mp3"
 sound2 = "/home/stopthebleed/StoptheBleed/Sounds/30seccondscream.mp3"
@@ -28,6 +28,10 @@ soundtimer = 0
 class Simulation:
     # Initializer will eventually take parameters from simulation type`
     def __init__(self):
+
+        self.blood = None
+        self.wound = None
+        self.sound = None
 
         self.timelist = []
         self.pressurelist = []
@@ -86,12 +90,12 @@ class Simulation:
 
         #tic3 = 0 #timestamp
 
-        if screen.blood.get() == 1:     #2:30 also known as high
+        if self.blood.get() == 1:     #2:30 also known as high
             self.MAX_MOTOR_SPEED = 14000
-        if screen.blood.get() == 2:     #5:00 also known as low
+        if self.blood.get() == 2:     #5:00 also known as low
             self.MAX_MOTOR_SPEED = 2500
 
-        if screen.wound.get() == 3: self.errorthreshold = 70
+        if self.wound.get() == 3: self.errorthreshold = 70
 
 
         # for reference
@@ -114,7 +118,7 @@ class Simulation:
         GPIO.setmode (GPIO.BCM)         #we are programming the GPIO by BCM pin numbers. (PIN35 as ‘GPIO19’)
         GPIO.setup(19,GPIO.OUT)       # initialize GPIO19 as an output, not important for the pressure sensor or load cell
 
-       """ PUL = 12  #pwm pin
+        """ PUL = 12  #pwm pin
         DIR = 27  # Controller Direction Bit (High for Controller default / LOW to Force a Direction Change).
         ENA = 22  # Controller Enable Bit (High to Enable / LOW to Disable)."""
 
@@ -136,13 +140,13 @@ class Simulation:
         dummy_command=0x00
         offset=1000"""
 
-        self.SENSOR_ADDRESS = 0x28 if screen.wound.get() == 1 else 0x27 if screen.wound.get() == 2 else 0x26
+        self.SENSOR_ADDRESS = 0x28 if self.wound.get() == 1 else 0x27 if self.wound.get() == 2 else 0x26
 
-        if screen.wound.get() == 1:
+        if self.wound.get() == 1:
             self.LOAD_SENSOR_DATA=bus.read_byte(0x28)#This apparently turns the load sensor on, only need it once
-        elif screen.wound.get() == 2:
+        elif self.wound.get() == 2:
             self.LOAD_SENSOR_DATA=bus.read_byte(0x27)
-        elif screen.wound.get() == 3:  
+        elif self.wound.get() == 3:  
             self.LOAD_SENSOR_DATA=bus.read_byte(0x26)
         self.LBS_DATA_SENSOR=0
 
@@ -235,12 +239,12 @@ class Simulation:
     #========================================================================
     # Motor Update PWM
     def __motor_UpdatePWM(self):
-        if screen.blood.get() > 2:
+        if self.blood.get() > 2:
             return
 
 
         #This Turns Relay On.
-        if screen.wound.get() == 1:
+        if self.wound.get() == 1:
             GPIO.output(self.junction, 1)
         else:
             GPIO.output(self.arm,1)
@@ -272,7 +276,7 @@ class Simulation:
 
         if self.BloodLost >= 3:
             self.stop_pump()
-            screen.root.event_generate("<<event4>>", state=str(0))
+            broadCastEvent(0)
             time.sleep(5)
             #quit() #TODO end thread and go back to home
 
@@ -282,7 +286,7 @@ class Simulation:
     def __checkEnd(self):
          if self.STB_timer >= self.timetostopthebleed:
             self.stop_pump()
-            self.root.event_generate("<<event4>>", state=str(1)) #TODO: check documentation to ensure worker thread is not handling event
+            broadCastEvent(1)
             time.sleep(5)
             quit()
 
@@ -302,46 +306,46 @@ class Simulation:
     #========================================================================
     # Play Sound
     def __playSound(self):
-        if screen.sound.get() != 1:
+        if self.sound.get() != 1:
             return
 
         global timestamp2, Falloffcount, soundtimer
-            timestamp1 = time.perf_counter()
-            if timestamp2 == 0:
-                timestamp1 = timestamp2
+        timestamp1 = time.perf_counter()
+        if timestamp2 == 0:
+            timestamp1 = timestamp2
 
-            soundtimer = timestamp1-timestamp2
-            if self.DATA >= 20 and soundtimer == 0:
-                timestamp2 = time.perf_counter()
-                if Falloffcount in [0,3,6,9,12]:
-                    audio.music.stop()
-                    audio.music.load("/home/stopthebleed/StoptheBleed/Sounds/30seccondscream.mp3")
-                    audio.music.set_volume(1.0)
-                    audio.music.play()                    
-                   
-                elif Falloffcount in [1,4,7,10,13]:
-                    audio.music.stop()
-                    audio.music.load("/home/stopthebleed/StoptheBleed/Sounds/scream3.mp3")
-                    audio.music.set_volume(1.0)
-                    audio.music.play()
-                 
-                else:
-                    audio.music.stop()
-                    audio.music.load("/home/stopthebleed/StoptheBleed/Sounds/getofflong.mp3")
-                    audio.music.set_volume(1.0)
-                    audio.music.play()
-                   
-            if self.DATA < 20 and self.DATA > 10 and soundtimer != 0:
-
-                Falloffcount += 1
+        soundtimer = timestamp1-timestamp2
+        if self.DATA >= 20 and soundtimer == 0:
+            timestamp2 = time.perf_counter()
+            if Falloffcount in [0,3,6,9,12]:
                 audio.music.stop()
-                audio.music.load("/home/stopthebleed/StoptheBleed/Sounds/Moan1.mp3")
-                audio.music.set_volume(0.5)
+                audio.music.load("/home/stopthebleed/StoptheBleed/Sounds/30seccondscream.mp3")
+                audio.music.set_volume(1.0)
+                audio.music.play()                    
+                   
+            elif Falloffcount in [1,4,7,10,13]:
+                audio.music.stop()
+                audio.music.load("/home/stopthebleed/StoptheBleed/Sounds/scream3.mp3")
+                audio.music.set_volume(1.0)
                 audio.music.play()
-                timestamp2 = 0
-           
-            if self.DATA < 10 :
+                 
+            else:
                 audio.music.stop()
+                audio.music.load("/home/stopthebleed/StoptheBleed/Sounds/getofflong.mp3")
+                audio.music.set_volume(1.0)
+                audio.music.play()
+                   
+        if self.DATA < 20 and self.DATA > 10 and soundtimer != 0:
+
+            Falloffcount += 1
+            audio.music.stop()
+            audio.music.load("/home/stopthebleed/StoptheBleed/Sounds/Moan1.mp3")
+            audio.music.set_volume(0.5)
+            audio.music.play()
+            timestamp2 = 0
+           
+        if self.DATA < 10 :
+            audio.music.stop()
 
     #========================================================================
     # GUI Data Pass
