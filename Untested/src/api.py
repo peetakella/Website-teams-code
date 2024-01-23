@@ -9,6 +9,7 @@ Verson:         2.0
 import requests
 import json
 
+#TODO: This is the least tested object so far, test alongslied jacob to ensuer proper functionality
 #===============================================================================
 # Class for User Data
 class User:

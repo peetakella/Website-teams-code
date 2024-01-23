@@ -75,27 +75,6 @@ class Window:
 
         
         self._root.mainloop()
-        # The below code is more optimal but requires python 3.10 >
-        """
-        match self._state:
-            case 1:
-                self.__DrawWindow1()
-            case 2:
-                self.__DrawWindow2()
-            case 3:
-                self.__DrawWindow3()
-            case 4:
-                self.__DrawWindow4()
-            case 5:
-                self.__DrawWindow5()
-            case 6:
-                self.__DrawWindow6()
-            case 7:
-                self.__DrawWindow7()
-            case 8:
-                self.__DrawWindow8()
-            case _:
-                raise ValueError("Invalid State")"""
 
     # Destroy's previous window and changes state to new one to be drawn
     def _destroy_UpdateState(self, state):
@@ -103,7 +82,7 @@ class Window:
             widget.destroy()
 
         self._state = state
-        stateObserver.state = state
+        stateObserver.state = state #Notifies all other objects
 
 
     #==================================================================================================
@@ -178,10 +157,12 @@ class Window:
 
 
     def updateOptions(self):
-        simulation.blood = self._blood
-        simulation.wound = self._wound
-        simulation.sound = self._sound
-
+        simulation.blood = self._blood.get()
+        simulation.wound = self._wound.get()
+        simulation.sound = self._sound.get()
+        del self._blood
+        del self._wound
+        del self._sound
 
     # Simulation SetupWindow
     def __DrawWindow3(self):
@@ -308,7 +289,8 @@ class Window:
         canvas_graph.draw()
         canvas_graph.get_tk_widget().grid(row=1,column=0)
 
-        
+       
+        # TODO: Possible speedup from combining events need to find way to pass multiple values in event
         def Update_Sim_Window(event1):
             big_BloodLost1 = float(event1.state)
             BloodLost1 = big_BloodLost1 / 1000000    
