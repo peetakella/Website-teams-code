@@ -10,27 +10,20 @@ Version:        2.0
 import pygame.mixer
 import threading
 
+
 # Local Imports
-from src.observer import Observer
-from src.api import *
-from src.sim import Simulation
-from src.gui import *
-
-# Global Objects
-stateObserver = Observer()
-network = API_Network("http://tosmcoe0005.ttu.edu:3000")
-simulation = Simulation()
-screen = Window()
-
-# Top level classes
-screen = None
-network = None
-simulation = None
-stateObserver = None
 audio = pygame.mixer.init()
-
+from src.observer import Observer
+stateObserver = Observer()
+from src.api import *
+network = API_Network("http://tosmcoe0005.ttu.edu:3000")
+from src.sim import Simulation
+simulation = Simulation(audio)
+from src.gui import *
+screen = None
 
 """
+# Untested Lickely doesn't work as is keeping for reference
 #=================================================================================================
 # Seperates simulation object from needing a circular import
 def broadCastEvent(state):
@@ -40,7 +33,6 @@ def broadCastEvent(state):
 #==================================================================================================
 # Program Main function
 def main():
-    stateObserver.bind_to(simulationBegin)
     screen.updateWindow()
 
 
@@ -67,4 +59,6 @@ def simulationBegin(observed_state):
 #==================================================================================================
 # Start program execution
 if __name__ == "__main__":
+    stateObserver.bind_to(simulationBegin)
+    screen = Window()
     main()

@@ -20,7 +20,7 @@ offset=1000
 # Library Imports
 import RPi.GPIO as GPIO
 from time import sleep, perf_counter
-from smbus imort SMBus
+from smbus import SMBus
 from math import log
 from queue import Queue
 

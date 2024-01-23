@@ -10,7 +10,7 @@ version:        0.1
 class Observer:
     def __init__(self):
         self._state = 1
-        self._observers = []
+        self._observers = None
 
     @property
     def state(self):
@@ -20,9 +20,9 @@ class Observer:
     def state(self, new_state):
         self._state = new_state
 
-        for callback in self._observers:
-            callback(new_state)
+        if self._observers:
+            self._observers(new_state)
 
     def bind_to(self, callback):
-        self._observers.append(callback)
+        self._observers = callback
 
