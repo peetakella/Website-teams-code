@@ -317,7 +317,7 @@ def display_window():
         #txtarea.pack(pady=20)
         def browseFiles():
             filename = filedialog.askopenfilename(initialdir = "/home/stopthebleed/StoptheBleed", title = "Select a File", filetypes = (("Text files", "*.txt*"), ("all files", "*.*")))
-            label_file_explorer.configure(text="File Opened: "+filename)    
+            #label_file_explorer.configure(text="File Opened: "+filename)    
             for line in open(filename, 'r'):
                 data = [i for i in line.split()]
                 x.append(float(data[0]))
@@ -345,24 +345,35 @@ def display_window():
             #print(x[0:12])
             #print(m[0:12])
 
-        frame1 = LabelFrame(frame, padx= 50, pady= 10, fg = 'black', bg = 'grey75')
-        frame1.grid(row= 1, column= 1, columnspan= 1, padx= 25, pady= 20)
+        button_home = Button(frame, text="Browse\nFiles", command = browseFiles,bg="firebrick3",fg="white", font=("Arial", largetext))
+        button_home.place(x=0, y=.175*h, height=.3*h, width=.15*w)
+        button_home = Button(frame, text="Home", command = lambda: [open_home_window()],bg="firebrick3",fg="white", font=("Arial", largetext))
+        button_home.place(x=0, y=.525*h, height=.3*h, width=.15*w)       
+        #Create graph frame
+        frame1 = Frame(frame, pady=25, bg="gray75")#.pack(fill=BOTH, expand = True)
+        frame1.place(x=.15*w, y=0, height=.95*h, width=.875*w)
+
+        '''frame1 = LabelFrame(frame, padx= 50, pady= 10, fg = 'black', bg = 'grey75')
+        frame1.grid(row= 1, column= 1, columnspan= 1, padx= 25, pady= 20)'''
 
         pathh = Entry(frame)
         pathh.grid(column = 0, row = 3)
         #pathh.pack(side=LEFT, expand=True, fill=X, padx=20)
 
-        label_file_explorer = Label(frame, text = "File Explorer using Tkinter", width = 100, height = 4, fg = "blue")
-        label_file_explorer.grid(column = 0, row = 0, columnspan= 2)
+        '''label_file_explorer = Label(frame, text = "File Explorer using Tkinter", width = 100, height = 4, fg = "blue")
+        label_file_explorer.grid(column = 0, row = 0, columnspan= 2)'''
          
-        button_explore = Button(frame, text = "Browse Files", command = browseFiles)
-        button_explore.grid(column = 0, row = 4)  
+        '''button_explore = Button(frame, text = "Browse Files", command = browseFiles)
+        button_explore.grid(column = 0, row = 4)'''  
 
-        button_exit = Button(frame, text = "Exit", command = exit)
-        button_exit.grid(column = 0,row = 5)
+        '''button_exit = Button(frame, text="Home", command = lambda: [open_home_window()])
+        button_exit.grid(column = 0,row = 5)'''
 
-        fig = Figure(figsize=(15, 8))
+        fig = Figure(figsize=(17.5, 10.1))
         ax = fig.add_subplot(111)
+        ax.set_title('Simulation Summary', fontsize=80)
+        ax.set_xlabel('Time (s)', fontsize=40)
+        ax.set_ylabel('Pressure at Bleed (LBS)', fontsize=40)       
         line, = ax.plot(x, m)
         ax.grid()
         #line_20ref, = ax.plot(x. ma_x)
@@ -780,8 +791,8 @@ def Background():
            
             #Condition sensor for continuous measurements
             LOAD_SENSOR_ADDRESS1=0x28 #junction
-            LOAD_SENSOR_ADDRESS2=0x27 #Higher arm sensor
-            LOAD_SENSOR_ADDRESS3=0x26 #Lower arm sensor
+            LOAD_SENSOR_ADDRESS2=0x26 #Higher arm sensor
+            LOAD_SENSOR_ADDRESS3=0x27 #Lower arm sensor
             dummy_command=0x00
             offset=1000    
             #offset=int((input("Enter offset value, default 1000:") or 1000))                                        #subtracts zero offset per data sheet, should be 1000
@@ -789,6 +800,7 @@ def Background():
                 LOAD_SENSOR_DATA1=bus.read_byte(LOAD_SENSOR_ADDRESS1)#This apparently turns the load sensor on, only need it once
             elif wound.get() == 2:
                 LOAD_SENSOR_DATA2=bus.read_byte(LOAD_SENSOR_ADDRESS2)
+                LOAD_SENSOR_DATA3=bus.read_byte(LOAD_SENSOR_ADDRESS3)                
             elif wound.get() == 3:  
                 LOAD_SENSOR_DATA3=bus.read_byte(LOAD_SENSOR_ADDRESS3)
             LBS_DATA_SENSOR1=0
@@ -847,7 +859,7 @@ def Background():
         elif wound.get() == 2:
             #print('enter if wound != 1 collect data')
             try :
-                bus.write_byte(LOAD_SENSOR_ADDRESS1,dummy_command)#without this command, the status bytes go high on every other read
+                bus.write_byte(LOAD_SENSOR_ADDRESS2,dummy_command)#without this command, the status bytes go high on every other read
                 LOAD_SENSOR_DATA2=bus.read_i2c_block_data(LOAD_SENSOR_ADDRESS2,dummy_command,2)     #This should turn the load sensor on, but doesn't.  
                 ##print(3)
             except OSError:
@@ -880,6 +892,41 @@ def Background():
                                 stop_pump()
                                 sleep(5)
                                 quit()
+            try:
+                bus.write_byte(LOAD_SENSOR_ADDRESS3,dummy_command)#without this command, the status bytes go high on every other read
+                LOAD_SENSOR_DATA3=bus.read_i2c_block_data(LOAD_SENSOR_ADDRESS3,dummy_command,2)     #This should turn the load sensor on, but doesn't.  
+                ##print(3)
+            except OSError:
+                ##print('Error 1')
+                sleep(.1)
+               
+                try :
+                    LOAD_SENSOR_DATA3=bus.read_i2c_block_data(LOAD_SENSOR_ADDRESS3,dummy_command,2)     #This should turn the load sensor on, but doesn't.  
+                except OSError:
+                    ##print('Error 2')
+                    sleep(.1)
+                   
+                    try :
+                        LOAD_SENSOR_DATA3=bus.read_i2c_block_data(LOAD_SENSOR_ADDRESS3,dummy_command,2)     #This should turn the load sensor on, but doesn't.  
+                    except OSError:
+                        ##print('Error 3')
+                        sleep(.1)
+               
+                        try :
+                            LOAD_SENSOR_DATA3=bus.read_i2c_block_data(LOAD_SENSOR_ADDRESS3,dummy_command,2)     #This should turn the load sensor on, but doesn't.  
+                        except OSError:
+                            ##print('Error 4')
+                            sleep(.1)
+                           
+                            try :
+                                LOAD_SENSOR_DATA3=bus.read_i2c_block_data(LOAD_SENSOR_ADDRESS3,dummy_command,2)     #This should turn the load sensor on, but doesn't.  
+                            except OSError:
+                                ##print('Error 5')
+                                ##print('Stopping Motor and Turning off Solenoids')
+                                stop_pump()
+                                sleep(5)
+                                quit()
+
         else:            
             try:
                 bus.write_byte(LOAD_SENSOR_ADDRESS3,dummy_command)#without this command, the status bytes go high on every other read
@@ -941,8 +988,12 @@ def Background():
         elif wound.get() == 2:
             print('enter if wound = 1 filter data')
             LBS_DATA_SENSOR2=((LOAD_SENSOR_DATA2[0]&63)*2**8 + LOAD_SENSOR_DATA2[1] - offset)*100/14000                                                                                 #It does return the correct two bytes after the initial read byte command
+            LBS_DATA_SENSOR3=((LOAD_SENSOR_DATA3[0]&63)*2**8 + LOAD_SENSOR_DATA3[1] - offset)*100/14000 
             ##print ("Sensed load in LBS 1 = ",'{0:.3f}'.format(((LOAD_SENSOR_DATA1[0]&63)*2**8 + LOAD_SENSOR_DATA1[1] - offset)*100/14000), "pounds")#plots out      
-            LBS_DATA_SENSOR2 = 1 * LBS_DATA_SENSOR2
+            LBS_DATA_SENSOR2 = 1 * LBS_DATA_SENSOR2 #Calibrate percent of tourniquet from middle sensor
+            LBS_DATA_SENSOR3 = 1 * LBS_DATA_SENSOR3 #Calibrate percent of tourniquet from lower sensor           
+            LBS_DATA_SENSOR2 = LBS_DATA_SENSOR2 + LBS_DATA_SENSOR3
+            
             if LBS_DATA_SENSOR2 < 0:
                 LBS_DATA_SENSOR2 = 0
             elif LBS_DATA_SENSOR2 > 0 and LBS_DATA_SENSOR2 <= upthreshold2:  #upthreshpld line 300  

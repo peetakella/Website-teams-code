@@ -14,6 +14,7 @@ import RPi.GPIO as GPIO
 import time
 import smbus
 import math
+from queue import Queue
 
 
 sound1 = "/home/stopthebleed/StoptheBleed/Sounds/30seccondscream.mp3"
@@ -25,13 +26,13 @@ soundtimer = 0
 
 class Simulation:
     # Initializer will eventually take parameters from simulation type`
-    def __init__(self, audio, callback, generator):
-        self.broadCastEvent = callback
-        self.generate = generator
+    def __init__(self, audio):
+
         self.audio = audio
         self.blood = None
         self.wound = None
         self.sound = None
+        self.eventQueue = Queue()
 
         self.timelist = []
         self.pressurelist = []
@@ -163,7 +164,6 @@ class Simulation:
     # NOTE: primary method
     # Method to run simulation
     def run(self):
-        print("simulation running")
         self.__collect_Data()
         self.__process_Data()
         self.__setMotorHz()
@@ -185,34 +185,35 @@ class Simulation:
     #========================================================================
     # Data Collection
     def __collect_Data(self):
-        time.sleep(0.005)
+        time.sleep(0.01)
         
         try :
             self.bus.write_byte(self.SENSOR_ADDRESS, 0x00)#without this command, the status bytes go high on every other read
             self.LOAD_SENSOR_DATA=self.bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
         except OSError:
-            time.sleep(.1)
+            #time.sleep(0.001)
                
             try :
                 self.LOAD_SENSOR_DATA=self.bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
             except OSError:
-                time.sleep(.1)
+                #time.sleep(0.001)
                    
                 try :
                     self.LOAD_SENSOR_DATA=self.bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
                 except OSError:
-                    time.sleep(.1)
+                    #time.sleep(0.001)
                
                     try :
                         self.LOAD_SENSOR_DATA=self.bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
                     except OSError:
-                        time.sleep(.1)
+                        #time.sleep(0.001)
                            
                         try :
                             self.LOAD_SENSOR_DATA=self.bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
                         except OSError:
                             self.stop_pump()
-                            time.sleep(5)
+                            self.P = False
+                            #time.sleep(0.001)
                             quit()
 
                            
@@ -283,7 +284,7 @@ class Simulation:
         if self.BloodLost >= 3:
             self.stop_pump()
             self.broadCastEvent(0)
-            time.sleep(5)
+            #time.sleep(0.001)
             #quit() #TODO end thread and go back to home
 
 
@@ -293,7 +294,8 @@ class Simulation:
          if self.STB_timer >= self.timetostopthebleed:
             self.stop_pump()
             broadCastEvent(1)
-            time.sleep(5)
+            self.P = False
+            #time.sleep(0.001)
             quit()
 
     #========================================================================
@@ -306,6 +308,7 @@ class Simulation:
         self.data3.append(self.LBS_DATA_SENSOR)
         self.DATA = self.LBS_DATA_SENSOR
 
+        # TODO: change to doing this once at end of simulation by configuring lists
         with open(self.filename, "a") as file:
             file.write(f"{self.totaltime}\t{self.BloodLost}\t{self.DATA}\n")
 
@@ -368,10 +371,6 @@ class Simulation:
         big_DATA = rounded_DATA*1000000
         int_DATA = int(big_DATA)
        
-            
-        self.generate(int_BloodLost, int_DATA, int_totaltime)
-
-        """
-        root.event_generate("<<event1>>", state=str(int_BloodLost))    
-        root.event_generate("<<event2>>", state=str(int_DATA))
-        root.event_generate("<<event3>>", state=str(int_totaltime))"""
+        
+        self.eventQueue.put([int_BloodLost, int_DATA, int_totaltime])
+        time.sleep(0.01)

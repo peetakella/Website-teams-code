@@ -7,6 +7,7 @@ Version:        2.0
 ==================================================================================
 """
 
+from time import sleep
 import tkinter as tk
 from tkinter import *
 from tkinter import ttk
@@ -177,7 +178,6 @@ class Window:
 
 
     def updateOptions(self):
-        print("updating")
         simulation.blood = self._blood
         simulation.wound = self._wound
         simulation.sound = self._sound
@@ -308,33 +308,24 @@ class Window:
         canvas_graph.draw()
         canvas_graph.get_tk_widget().grid(row=1,column=0)
 
+        
         def Update_Sim_Window(event1):
-            #print('update sim window')
-            ##print(event1.state)    
             big_BloodLost1 = float(event1.state)
             BloodLost1 = big_BloodLost1 / 1000000    
-            ##print('BloodLost1:',BloodLost1)
-            #BloodLost1=BloodLost1*200
-            blood_loss.append(BloodLost1)
+            simulation.blood_loss.append(BloodLost1)
             progbar['value'] = BloodLost1
            
         def Update_pressure(event2):
-            #print('update pressure')
-            ##print(event3.state)
             big_pressure = float(event2.state)
             smallpressure = big_pressure / 1000000    
-            ##print('pressuregui:',smallpressure)            
-            pressurelist.append(smallpressure)
+            simulation.pressurelist.append(smallpressure)
 
            
         def Update_time(event3):
-            #print('update time')
-            ##print(event2.state)
             big_time = float(event3.state)
             smalltime = big_time / 1000000    
-            #print('titaltime gui:',smalltime)            
-            timelist.append(smalltime)
-            ma_xlist.append(20)
+            simulation.timelist.append(smalltime)
+            simulation.ma_xlist.append(20)
             ax.set_xlim(smalltime - 30, smalltime + 10)  # Adjust the axis limits based on your data
             line, = ax.plot(simulation.timelist, simulation.pressurelist, label='Your Pressure', linewidth=5, color = 'b')
             line_20ref, = ax.plot(simulation.timelist, simulation.ma_xlist, label='Target Pressure', linewidth=5, color = 'r' )
@@ -342,7 +333,9 @@ class Window:
 
         self._root.bind("<<event1>>",Update_Sim_Window)
         self._root.bind("<<event2>>",Update_pressure)
-        self._root.bind("<<event3>>",Update_time)   
+        self._root.bind("<<event3>>",Update_time)
+
+
 
 
     # Failed Simulation Window
@@ -490,3 +483,10 @@ class Window:
         button_view_graph.place(x=.675 * w, y=.775 * h, height=.15*h, width=.3*w)
        
         populate_listbox()
+
+    def handleQueue(self):
+        while simulation.P:
+            data = simulation.eventQueue.get()
+            self._root.event_generate("<<event2>>", state=str(data[1]))
+            self._root.event_generate("<<event3>>", state=str(data[2]))
+            self._root.event_generate("<<event1>>", state=str(data[0]))
