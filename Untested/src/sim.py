@@ -152,6 +152,46 @@ class Simulation:
         self.__playSound()
         self.__GUIDataPass()
 
+    def runTest(self):
+        self.tic1 = perf_counter()
+
+        if self.blood == 1:                   #2:30 also known as high
+            self.MAX_MOTOR_SPEED = 14000
+        if self.blood == 2:                   #5:00 also known as low
+            self.MAX_MOTOR_SPEED = 2500
+
+        if self.wound == 3: self.errorthreshold = 70
+
+        self.ratio = (self.MAX_MOTOR_SPEED - 100) / (self.upthreshold - 0)
+
+        self.bus = SMBus(1)                         #I2C channel 1 is connected to the GPIO pins 2 (SDA) and 4 (SCL)
+           
+        channel = 1                                 #select channel
+        #set up digital io
+        GPIO.setwarnings(False)                     #do not show any warnings
+        GPIO.setmode (GPIO.BCM)                     #we are programming the GPIO by BCM pin numbers. (PIN35 as ‘GPIO19’)
+        GPIO.setup(19,GPIO.OUT)                     # initialize GPIO19 as an output, not important for the pressure sensor or load cell
+
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(self.PUL, GPIO.OUT)
+        GPIO.setup(self.DIR, GPIO.OUT)
+        GPIO.setup(self.ENA, GPIO.OUT)
+        GPIO.setup(self.arm, GPIO.OUT)
+        GPIO.setup(self.junction, GPIO.OUT)
+        self.p=GPIO.PWM(self.PUL, 100) #PWM Function is defined
+        self.SENSOR_ADDRESS = 0x28 if self.wound == 1 else 0x27 if self.wound == 2 else 0x26
+
+        # Sensor Initialization
+        if self.wound == 1:
+            self.LOAD_SENSOR_DATA=self.bus.read_byte(0x28)
+        elif self.wound == 2:
+            self.LOAD_SENSOR_DATA=self.bus.read_byte(0x27)
+        elif self.wound == 3:  
+            self.LOAD_SENSOR_DATA=self.bus.read_byte(0x26)
+        self.LBS_DATA_SENSOR=0
+
+
+
     #========================================================================
     # Method to stop pump only called once if blood option selected
     def stop_pump(self):

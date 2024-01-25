@@ -472,3 +472,5 @@ class Window:
             self._root.event_generate("<<event2>>", state=str(data[1]))
             self._root.event_generate("<<event3>>", state=str(data[2]))
             self._root.event_generate("<<event1>>", state=str(data[0]))
+
+
