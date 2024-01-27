@@ -18,6 +18,7 @@ offset=1000
 """
 
 # Library Imports
+import os
 import RPi.GPIO as GPIO
 from time import sleep, perf_counter
 from smbus import SMBus
@@ -25,10 +26,10 @@ from math import log
 from queue import Queue
 
 # Global Variables
-# TODO: Change directories to asset folder in future
-sound1 = "/home/stopthebleed/StoptheBleed/Sounds/30seccondscream.mp3"
-sound2 = "/home/stopthebleed/StoptheBleed/Sounds/30seccondscream.mp3"
-sound3 = "/home/stopthebleed/StoptheBleed/Sounds/30seccondscream.mp3"
+# TODO: Test relative Path unsure if it will use main or gui
+sound1 = os.path.join(os.path.dirname(__file__), "/assets/30secondscream.mp3")
+sound2 = os.path.join(os.path.dirname(__file__), "/assets/30secondscream.mp3")
+sound3 = os.path.join(os.path.dirname(__file__), "/assets/30secondscream.mp3")
 timestamp2 = 0
 Falloffcount = 0
 soundtimer = 0
@@ -47,11 +48,11 @@ class Simulation:
         self.pressurelist = []
         self.ma_xlist = []
         self.blood_loss = []
-        self.P = True # P is for "Program Running"
+        self.P = True                   # P: "Program Running"
         self.timetostopthebleed = 1
 
 
-        self.MAX_MOTOR_SPEED = 12000 # Initialize with default value
+        self.MAX_MOTOR_SPEED = 12000    # Initialize with default value
         self.LOAD_SENSOR_DATA = None
         self.LBS_DATA_SENSOR = None
         self.SENSOR_ADDRESS = None
@@ -72,7 +73,7 @@ class Simulation:
         self.Hz = 0
         self.ratio = 0
 
-        self.PUL = 12  #pwm pin
+        self.PUL = 12  # pwm pin
         self.DIR = 27  # Controller Direction Bit (High for Controller default / LOW to Force a Direction Change).
         self.ENA = 22  # Controller Enable Bit (High to Enable / LOW to Disable).
 
@@ -108,6 +109,7 @@ class Simulation:
         self.ratio = (self.MAX_MOTOR_SPEED - 100) / (self.upthreshold - 0)
 
         self.bus = SMBus(1)                         #I2C channel 1 is connected to the GPIO pins 2 (SDA) and 4 (SCL)
+        sleep(1)                                    # This sleep prevents io error
            
         channel = 1                                 #select channel
         #set up digital io
@@ -202,33 +204,14 @@ class Simulation:
     #========================================================================
     # Data Collection
     def __collect_Data(self):
-        sleep(0.01)
-        
         try :
             self.bus.write_byte(self.SENSOR_ADDRESS, 0x00)#without this command, the status bytes go high on every other read
             self.LOAD_SENSOR_DATA=self.bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
         except OSError:
-               
-            try :
-                self.LOAD_SENSOR_DATA=self.bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
-            except OSError:
-                   
-                try :
-                    self.LOAD_SENSOR_DATA=self.bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
-                except OSError:
-               
-                    try :
-                        self.LOAD_SENSOR_DATA=self.bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
-                    except OSError:
-                           
-                        try :
-                            self.LOAD_SENSOR_DATA=self.bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
-                        except OSError:
-                            self.stop_pump()
-                            self.P = False
-                            quit()
-
-                           
+            self.stop_pump()
+            self.P = False
+            print(OSError)
+            quit()                           
    
 
     #========================================================================
@@ -321,12 +304,6 @@ class Simulation:
         self.data3.append(self.LBS_DATA_SENSOR)
         self.DATA = self.LBS_DATA_SENSOR
 
-        # TODO:
-        # Most likely can be optimized, if writting to file every cycle either don't use list or vise versa
-        # Two options for optimization: 
-        # 1. Write to file every backend cycle remove list and instead just use variables that change
-        # 2. Write to file at simulation end and use list to store data
-        # Both options are not optimial but one is required current version chooses both suboptimal options
         with open(self.filename, "a") as file:
             file.write(f"{self.totaltime}\t{self.BloodLost}\t{self.DATA}\n")
 
@@ -376,18 +353,11 @@ class Simulation:
     #========================================================================
     # GUI Data Pass
     def __GUIDataPass(self):
-        rounded_BloodLost = round(self.BloodLost, 6)  # Rounds to 8 decimal places#TODO make string
-        big_bloodLost = rounded_BloodLost*1000000
-        int_BloodLost = int(big_bloodLost)
-       
-        rounded_totaltime = round(self.totaltime, 6)  # Rounds to 8 decimal places
-        big_totaltime = rounded_totaltime*1000000
-        int_totaltime = int(big_totaltime)
-       
-        rounded_DATA = round(self.DATA, 6)  # Rounds to 8 decimal places
-        big_DATA = rounded_DATA*1000000
-        int_DATA = int(big_DATA)
-       
-        
-        self.eventQueue.put([int_BloodLost, int_DATA, int_totaltime])
+
+        self.blood_loss.append(self.BloodLost)
+        self.pressurelist.append(self.DATA)
+        self.timelist.append(self.totaltime)
+        self.ma_xlist.append(20)
+
+        self.eventQueue.put(True)
         sleep(0.01)

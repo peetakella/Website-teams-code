@@ -7,7 +7,7 @@ Version:        2.0
 ==================================================================================
 """
 
-from time import sleep
+from time import sleep, perf_counter
 import tkinter as tk
 from tkinter import *
 from tkinter import ttk
@@ -256,6 +256,7 @@ class Window:
             
     # Simulation Window
     def __DrawWindow4(self):
+        # TODO: See if using blit and draw_artist from matplotlib will give the speed up desired if not an alternative will be needed
         bleedoutbarframe = LabelFrame(self._frame,bg="firebrick3", fg="white")
         bleedoutbarframe.grid(row=0, column=0)
         graphframe = LabelFrame(self._frame,bg="firebrick3", fg="white")
@@ -278,7 +279,7 @@ class Window:
         ax.set_title('Pressure', fontsize=80)
         ax.set_xlabel('Time (s)', fontsize=40)
         ax.set_ylabel('Pressure at Bleed (LBS)', fontsize=40)
-        ax.set_xlim(-20, 20)
+        ax.set_xlim(-20, 30)
         ax.set_ylim(0, 30)
         line, = ax.plot(simulation.timelist, simulation.pressurelist, label='Your Pressure', linewidth=5, color = 'b')
         line_20ref, = ax.plot(simulation.timelist, simulation.ma_xlist, label='Target Pressure', linewidth=5, color = 'r' )
@@ -290,32 +291,23 @@ class Window:
         canvas_graph.get_tk_widget().grid(row=1,column=0)
 
        
-        # TODO: Possible speedup from combining events need to find way to pass multiple values in event
-        def Update_Sim_Window(event1):
-            big_BloodLost1 = float(event1.state)
-            BloodLost1 = big_BloodLost1 / 1000000    
-            simulation.blood_loss.append(BloodLost1)
-            progbar['value'] = BloodLost1
-           
-        def Update_pressure(event2):
-            big_pressure = float(event2.state)
-            smallpressure = big_pressure / 1000000    
-            simulation.pressurelist.append(smallpressure)
+        def UpdateData(event1):
 
-           
-        def Update_time(event3):
-            big_time = float(event3.state)
-            smalltime = big_time / 1000000    
-            simulation.timelist.append(smalltime)
-            simulation.ma_xlist.append(20)
-            ax.set_xlim(smalltime - 30, smalltime + 10)  # Adjust the axis limits based on your data
+            # Dequeue
+            simulation.eventQueue.get()
+
+            # Update Blood
+            progbar['value'] = simulation.blood_loss[-1]
+
+            # Update Window
+            ax.set_xlim(simulation.timelist[-1] - 20, simulation.timelist[-1]+ 30)
             line, = ax.plot(simulation.timelist, simulation.pressurelist, label='Your Pressure', linewidth=5, color = 'b')
-            line_20ref, = ax.plot(simulation.timelist, simulation.ma_xlist, label='Target Pressure', linewidth=5, color = 'r' )
+            line_20ref, = ax.plot(simulation.timelist, simulation.ma_xlist, label='Target Pressure', linewidth=5, color = 'r')
+            
             canvas_graph.draw()
 
-        self._root.bind("<<event1>>",Update_Sim_Window)
-        self._root.bind("<<event2>>",Update_pressure)
-        self._root.bind("<<event3>>",Update_time)
+
+        self._root.bind("<<event1>>", UpdateData)
 
 
 
@@ -468,9 +460,8 @@ class Window:
 
     def handleQueue(self):
         while simulation.P:
-            data = simulation.eventQueue.get()
-            self._root.event_generate("<<event2>>", state=str(data[1]))
-            self._root.event_generate("<<event3>>", state=str(data[2]))
-            self._root.event_generate("<<event1>>", state=str(data[0]))
-
+            if not simulation.eventQueue.empty():
+                self._root.event_generate("<<event1>>")
+            sleep(0.001)
+                
 
