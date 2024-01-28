@@ -42,6 +42,7 @@ class Simulation:
         self.blood = None
         self.wound = None
         self.sound = None
+        self.eventIndex = 0
         self.eventQueue = Queue()
 
         self.timelist = []
@@ -279,10 +280,11 @@ class Simulation:
 
         if self.BloodLost >= 3:
             self.stop_pump()
-            self.broadCastEvent(0)
-
-            # The bellow was carried over from version 1
-            #quit() #TODO end thread and go back to home
+            self.eventQueue.put(False)
+            sleep(1) # Ensure that Observation thread can catch the stop
+            self.P = False
+            quit()
+            #self.broadCastEvent(0)
 
 
     #========================================================================
@@ -290,7 +292,8 @@ class Simulation:
     def __checkEnd(self):
          if self.STB_timer >= self.timetostopthebleed:
             self.stop_pump()
-            broadCastEvent(1)
+            self.eventQueue.put(True)
+            sleep(1) # Ensure that Observation thread can catch the stop
             self.P = False
             quit()
 
@@ -359,5 +362,6 @@ class Simulation:
         self.timelist.append(self.totaltime)
         self.ma_xlist.append(20)
 
-        self.eventQueue.put(True)
+        self.eventQueue.put(self.eventIndex)
+        self.eventIndex += 1
         sleep(0.01)

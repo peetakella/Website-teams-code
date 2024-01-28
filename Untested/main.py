@@ -22,13 +22,6 @@ simulation = Simulation(audio)
 from src.gui import *
 screen = None
 
-"""
-# Untested Lickely doesn't work as is keeping for reference
-#=================================================================================================
-# Seperates simulation object from needing a circular import
-def broadCastEvent(state):
-    screen._root.event_generate("<<event4>>", state=str(state))"""
-
 
 #==================================================================================================
 # Program Main function

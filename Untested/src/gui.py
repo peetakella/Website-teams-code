@@ -294,15 +294,22 @@ class Window:
         def UpdateData(event1):
 
             # Dequeue
-            simulation.eventQueue.get()
+            idx = simulation.eventQueue.get()
+
+            if type(idx) == bool:
+                if idx:
+                    self._root.event_generate("<<event4>>", state=str(1))
+                else:
+                    self._root.event_generate("<<event4>>", state=str(0))
+                return
 
             # Update Blood
             progbar['value'] = simulation.blood_loss[-1]
 
             # Update Window
-            ax.set_xlim(simulation.timelist[-1] - 20, simulation.timelist[-1]+ 30)
-            line, = ax.plot(simulation.timelist, simulation.pressurelist, label='Your Pressure', linewidth=5, color = 'b')
-            line_20ref, = ax.plot(simulation.timelist, simulation.ma_xlist, label='Target Pressure', linewidth=5, color = 'r')
+            ax.set_xlim(simulation.timelist[:idx+1] - 20, simulation.timelist[:idx+1]+ 30)
+            line, = ax.plot(simulation.timelist[:idx+1], simulation.pressurelist[:idx+1], label='Your Pressure', linewidth=5, color = 'b')
+            line_20ref, = ax.plot(simulation.timelist[:idx+1], simulation.ma_xlist[:idx+1], label='Target Pressure', linewidth=5, color = 'r')
             
             canvas_graph.draw()
 

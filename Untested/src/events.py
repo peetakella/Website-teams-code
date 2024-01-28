@@ -16,7 +16,7 @@ def end(event4):
 
     audio.music.stop() 
 
-    if event4.state == 0:
+    if event4.state == "0":
         screen._destroy_UpdateState(5)
         return
     
