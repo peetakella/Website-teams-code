@@ -27,9 +27,9 @@ from queue import Queue
 
 # Global Variables
 # TODO: Test relative Path unsure if it will use main or gui
-sound1 = os.path.join(os.path.dirname(__file__), "/assets/30secondscream.mp3")
-sound2 = os.path.join(os.path.dirname(__file__), "/assets/30secondscream.mp3")
-sound3 = os.path.join(os.path.dirname(__file__), "/assets/30secondscream.mp3")
+sound1 = os.path.join(os.path.dirname(__file__), "/assets/sounds/30secondscream.mp3")
+sound2 = os.path.join(os.path.dirname(__file__), "/assets/sounds/30secondscream.mp3")
+sound3 = os.path.join(os.path.dirname(__file__), "/assets/sounds/30secondscream.mp3")
 timestamp2 = 0
 Falloffcount = 0
 soundtimer = 0
