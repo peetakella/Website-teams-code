@@ -208,10 +208,10 @@ class Simulation:
         try :
             self.bus.write_byte(self.SENSOR_ADDRESS, 0x00)#without this command, the status bytes go high on every other read
             self.LOAD_SENSOR_DATA=self.bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
-        except OSError:
+        except Exception as e:
             self.stop_pump()
             self.P = False
-            print(OSError)
+            print(e)
             quit()                           
    
 
