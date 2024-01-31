@@ -53,26 +53,25 @@ class Window:
     #==================================================================================================
     # Method called in main loop
     def updateWindow(self):
-
-        if self._state == 1:
-            self.__DrawWindow1()
-        elif self._state == 2:
-            self.__DrawWindow2()
-        elif self._state == 3:
-            self.__DrawWindow3()
-        elif self._state == 4:
-            self.__DrawWindow4()
-        elif self._state == 5:
-            self.__DrawWindow5()
-        elif self._state == 6:
-            self.__DrawWindow6()
-        elif self._state == 7:
-            self.__DrawWindow7()
-        elif self._state == 8:
-            self.__DrawWindow8()
-        else:
-            raise ValueError("Invalid State")
-
+        match self._state:
+            case 1:
+                self.__DrawWindow1()
+            case 2:
+                self.__DrawWindow2()
+            case 3:
+                self.__DrawWindow3()
+            case 4:
+                self.__DrawWindow4()
+            case 5:
+                self.__drawWindow5()
+            case 6:
+                self.__DrawWindow6()
+            case 7:
+                self.__DrawWindow7()
+            case 8:
+                self.__DrawWindow8()
+            case _:
+                raise ValueError("Invalid State")
         
         self._root.mainloop()
 
