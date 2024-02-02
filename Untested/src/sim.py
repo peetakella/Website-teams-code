@@ -18,27 +18,19 @@ offset=1000
 """
 
 # Library Imports
-import os
 import RPi.GPIO as GPIO
 from time import sleep, perf_counter
 from smbus import SMBus
 from math import log
 from queue import Queue
+import pygame
 
-# Global Variables
-# TODO: Test relative Path unsure if it will use main or gui
-sound1 = os.path.join(os.path.dirname(__file__), "/assets/sounds/30secondscream.mp3")
-sound2 = os.path.join(os.path.dirname(__file__), "/assets/sounds/30secondscream.mp3")
-sound3 = os.path.join(os.path.dirname(__file__), "/assets/sounds/30secondscream.mp3")
-timestamp2 = 0
-Falloffcount = 0
-soundtimer = 0
+pygame.mixer.init()
 
 class Simulation:
     # Initializer will eventually take parameters from simulation type`
-    def __init__(self, audio):
+    def __init__(self):
 
-        self.audio = audio
         self.blood = None
         self.wound = None
         self.sound = None
@@ -91,6 +83,10 @@ class Simulation:
         self.BloodLost = 0
 
         self.bus = None
+        
+        self.timestamp2 = 0
+        self.Falloffcount = 0
+        self.soundtimer = 0
 
         #TODO Throw error codes for when and if there is something that can't be in a file name and have them try again
         self.filename = (f"A - Previous Trial.txt")
@@ -205,14 +201,17 @@ class Simulation:
     #========================================================================
     # Data Collection
     def __collect_Data(self):
-        try :
-            self.bus.write_byte(self.SENSOR_ADDRESS, 0x00)#without this command, the status bytes go high on every other read
-            self.LOAD_SENSOR_DATA=self.bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)     #This should turn the load sensor on, but doesn't.  
-        except Exception as e:
-            self.stop_pump()
-            self.P = False
-            print(e)
-            quit()                           
+        # Attempt to read from sensor 5 tries after that then there is a sensor fault and program will exit
+        for _ in range(5):
+            try :
+                self.bus.write_byte(self.SENSOR_ADDRESS, 0x00)  #without this command, the status bytes go high on every other read
+                self.LOAD_SENSOR_DATA=self.bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)
+                break
+            except Exception as e:
+                print(e)
+                self.stop_pump()
+                self.P = False
+                quit()
    
 
     #========================================================================
@@ -316,42 +315,41 @@ class Simulation:
         if self.sound != 1:
             return
 
-        timestamp1 = perf_counter()
-        if timestamp2 == 0:
-            timestamp1 = timestamp2
+        self.timestamp1 = perf_counter()
+        if self.timestamp2 == 0:
+            self.timestamp1 = self.timestamp2
 
-        soundtimer = timestamp1-timestamp2
-        if self.DATA >= 20 and soundtimer == 0:
-            timestamp2 = perf_counter()
-            if Falloffcount in [0,3,6,9,12]:
-                self.audio.music.stop()
-                self.audio.music.load("/home/stopthebleed/StoptheBleed/Sounds/30seccondscream.mp3")
-                self.audio.music.set_volume(1.0)
-                self.audio.music.play()                    
+        self.soundtimer = self.timestamp1-self.timestamp2
+        if self.DATA >= 20 and self.soundtimer == 0:
+            self.timestamp2 = perf_counter()
+            if self.Falloffcount in [0,3,6,9,12]:
+                pygame.mixer.music.stop()
+                pygame.mixer.music.load("assets/sounds/30secondscream.mp3")
+                pygame.mixer.music.set_volume(1.0)
+                pygame.mixer.music.play()                    
                    
-            elif Falloffcount in [1,4,7,10,13]:
-                self.audio.music.stop()
-                self.audio.music.load("/home/stopthebleed/StoptheBleed/Sounds/scream3.mp3")
-                self.audio.music.set_volume(1.0)
-                self.audio.music.play()
+            elif self.Falloffcount in [1,4,7,10,13]:
+                pygame.mixer.music.stop()
+                pygame.mixer.music.load("assets/sounds/scream3.mp3")
+                pygame.mixer.music.set_volume(1.0)
+                pygame.mixer.music.play()
                  
             else:
-                self.audio.music.stop()
-                self.audio.music.load("/home/stopthebleed/StoptheBleed/Sounds/getofflong.mp3")
-                self.audio.music.set_volume(1.0)
-                self.audio.music.play()
+                pygame.mixer.music.stop()
+                pygame.mixer.music.load("assets/sounds/getofflong.mp3")
+                pygame.mixer.music.set_volume(1.0)
+                pygame.mixer.music.play()
                    
-        if self.DATA < 20 and self.DATA > 10 and soundtimer != 0:
-
-            Falloffcount += 1
-            self.audio.music.stop()
-            self.audio.music.load("/home/stopthebleed/StoptheBleed/Sounds/Moan1.mp3")
-            self.audio.music.set_volume(0.5)
-            self.audio.music.play()
+        if self.DATA < 20 and self.DATA > 10 and self.soundtimer != 0:
+            self.Falloffcount += 1
+            pygame.mixer.music.stop()
+            pygame.mixer.music.load("assets/sounds/Moan1.mp3")
+            pygame.mixer.music.set_volume(0.5)
+            pygame.mixer.music.play()
             timestamp2 = 0
            
         if self.DATA < 10 :
-            self.audio.music.stop()
+            pygame.mixer.music.stop()
 
     #========================================================================
     # GUI Data Pass
@@ -364,4 +362,4 @@ class Simulation:
 
         self.eventQueue.put(self.eventIndex)
         self.eventIndex += 1
-        sleep(0.01)
+        sleep(0.05)

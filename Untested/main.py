@@ -7,18 +7,16 @@ Version:        2.0
 ==========================================================================================
 """
 # Library Imports
-import pygame.mixer
 import threading
 
 
 # Local Imports
-audio = pygame.mixer.init()
 from src.observer import Observer
 stateObserver = Observer()
 from src.api import *
 network = API_Network("http://tosmcoe0005.ttu.edu:3000")
 from src.sim import Simulation
-simulation = Simulation(audio)
+simulation = Simulation()
 from src.gui import *
 screen = None
 
