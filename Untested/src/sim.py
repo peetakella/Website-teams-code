@@ -20,7 +20,7 @@ offset=1000
 # Library Imports
 import RPi.GPIO as GPIO
 from time import sleep, perf_counter
-from smbus import SMBus
+from smbus2 import SMBus
 from math import log
 from queue import Queue
 import pygame
@@ -91,9 +91,64 @@ class Simulation:
         #TODO Throw error codes for when and if there is something that can't be in a file name and have them try again
         self.filename = (f"A - Previous Trial.txt")
 
+
+    #========================================================================
+    # Method to clean sim obj at end
+    def clean(self):
+
+        self.stop_pump()
+        GPIO.cleanup()
+        self.bus.close()
+        pygame.mixer.music.stop()
+        sleep(1)
+        self.P = False
+        quit()
+
     #========================================================================
     # begin - preprocessing then simulation cycle start optimization hear will only speedup intial load time
     def begin(self):
+
+        # Top is simply just resetting in case of previous trial
+        self.eventIndex = 0
+        
+        if not self.eventQueue.empty():
+            self.eventQueue.clear()
+
+        self.timelist = []
+        self.pressurelist = []
+        self.ma_xlist = []
+        self.blood_loss = []
+        self.P = True                   # P: "Program Running"
+
+
+        self.MAX_MOTOR_SPEED = 12000    # Initialize with default value 
+
+        self.DATA = None
+        self.data1 = []
+        self.data2 = []
+        self.data3 = []
+        self.data4 = []
+        self.Hz = 0
+        self.ratio = 0
+ 
+        self.p = None
+
+        self.tic1 = None
+        self.tic3 = 0
+        self.tic4 = None
+        self.tic5 = None
+        self.totaltime = 0
+
+        self.BloodLost = 0
+ 
+        self.timestamp2 = 0
+        self.Falloffcount = 0
+        self.soundtimer = 0
+        #========================================================================
+        # End of reset
+        
+        open(self.filename, "w").close() # resets file so only most resent data is stored
+        
         self.tic1 = perf_counter()
 
         if self.blood == 1:                   #2:30 also known as high
@@ -105,10 +160,10 @@ class Simulation:
 
         self.ratio = (self.MAX_MOTOR_SPEED - 100) / (self.upthreshold - 0)
 
-        self.bus = SMBus(1)                         #I2C channel 1 is connected to the GPIO pins 2 (SDA) and 4 (SCL)
-        sleep(1)                                    # This sleep prevents io error
+        if not self.bus:
+            self.bus = SMBus(1)                         #I2C channel 1 is connected to the GPIO pins 2 (SDA) and 4 (SCL)
+            sleep(1)                                    # This sleep prevents io error
            
-        channel = 1                                 #select channel
         #set up digital io
         GPIO.setwarnings(False)                     #do not show any warnings
         GPIO.setmode (GPIO.BCM)                     #we are programming the GPIO by BCM pin numbers. (PIN35 as ‘GPIO19’)
@@ -120,21 +175,21 @@ class Simulation:
         GPIO.setup(self.ENA, GPIO.OUT)
         GPIO.setup(self.arm, GPIO.OUT)
         GPIO.setup(self.junction, GPIO.OUT)
-        self.p=GPIO.PWM(self.PUL, 100) #PWM Function is defined
+        if not self.p:
+            self.p=GPIO.PWM(self.PUL, 100) #PWM Function is defined
         self.SENSOR_ADDRESS = 0x28 if self.wound == 1 else 0x27 if self.wound == 2 else 0x26
 
-        # Sensor Initialization
-        if self.wound == 1:
-            self.LOAD_SENSOR_DATA=self.bus.read_byte(0x28)
-        elif self.wound == 2:
-            self.LOAD_SENSOR_DATA=self.bus.read_byte(0x27)
-        elif self.wound == 3:  
-            self.LOAD_SENSOR_DATA=self.bus.read_byte(0x26)
+
+        # TODO Currently this is throwing an error
+        self.LOAD_SENSOR_DATA = self.bus.read_byte(self.SENSOR_ADDRESS)
+ 
         self.LBS_DATA_SENSOR=0
 
         # Run Simulation
         while self.P:
             self.run()
+        else:
+            self.clean()
 
     #========================================================================
     # Method to run simulation
@@ -202,19 +257,17 @@ class Simulation:
     # Data Collection
     def __collect_Data(self):
         # Attempt to read from sensor 5 tries after that then there is a sensor fault and program will exit
-        for _ in range(5):
+        for i in range(5):
             try :
                 self.bus.write_byte(self.SENSOR_ADDRESS, 0x00)  #without this command, the status bytes go high on every other read
                 self.LOAD_SENSOR_DATA=self.bus.read_i2c_block_data(self.SENSOR_ADDRESS, 0x00,2)
                 break
             except Exception as e:
-                print(e)
-                self.stop_pump()
-                self.P = False
-                quit()
-   
+                if i == 4:
+                    print(e)
+                    self.clean()
 
-    #========================================================================
+
     # Data Processing
     def __process_Data(self):
 
@@ -278,23 +331,16 @@ class Simulation:
         self.BloodLost= self.BloodLost + (self.cycletime * Flow_Rate / 60)
 
         if self.BloodLost >= 3:
-            self.stop_pump()
             self.eventQueue.put(False)
-            sleep(1) # Ensure that Observation thread can catch the stop
-            self.P = False
-            quit()
-            #self.broadCastEvent(0)
+            self.clean()
 
 
     #========================================================================
     # STB Timer reaches end check
     def __checkEnd(self):
          if self.STB_timer >= self.timetostopthebleed:
-            self.stop_pump()
             self.eventQueue.put(True)
-            sleep(1) # Ensure that Observation thread can catch the stop
-            self.P = False
-            quit()
+            self.clean() 
 
     #========================================================================
     # Store Data
@@ -362,4 +408,4 @@ class Simulation:
 
         self.eventQueue.put(self.eventIndex)
         self.eventIndex += 1
-        sleep(0.05)
+        sleep(0.07)

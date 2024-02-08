@@ -12,16 +12,14 @@ import sys
 import src
 import time
 import threading
-import pygame.mixer
 from statistics import stdev
 
-audio = pygame.mixer.init()
 from src.observer import Observer
 stateObserver = Observer()
 from src.api import *
 network = API_Network("http://tosmcoe0005.ttu.edu:3000")
 from src.sim import Simulation
-simulation = Simulation(audio)
+simulation = Simulation()
 from src.gui import *
 screen = None
 

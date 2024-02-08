@@ -16,7 +16,6 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from tkinter import filedialog
 
-from src.events import *
 from main import simulation, network, stateObserver
 
 # Formating Constants
@@ -42,6 +41,8 @@ class Window:
         self._blood = IntVar()
         self._sound = IntVar()
 
+        self._guest = True
+
         # Initialize Window
         self._root.title("Better Bleeding Control")
         self._root.configure(bg="gray75")
@@ -49,7 +50,6 @@ class Window:
         self._root.attributes('-fullscreen', True)
         self._frame = Frame(self._root)
         self._frame.pack(expand=True, fill=BOTH)
-        self._root.bind("<<event4>>",end)
 
     #==================================================================================================
     # Method called in main loop
@@ -85,6 +85,11 @@ class Window:
         stateObserver.state = state #Notifies all other objects
 
 
+    # Method For Changing Guest Demo
+    def setGuest(self):
+        self._guest = False
+
+
     #==================================================================================================
     # Drawing Methods
 
@@ -110,11 +115,16 @@ class Window:
         button_retrieve.place(x=.5025*w, y=.25*h, height=.675*h, width=.47*w)
 
     # Data Retrieval Window
-    # TODO: acrtually draw graph
     def __DrawWindow2(self):
         x = []
         m = []
         ma_x = []
+
+        def update_graph():
+            line.set_data(x, m)
+            ax.relim()
+            ax.autoscale_view()
+            canvas.draw()
 
         def browseFiles():
             filename = filedialog.askopenfilename(initialdir = "/home/stopthebleed/StoptheBleed", title = "Select a File", filetypes = (("Text files", "*.txt*"), ("all files", "*.*")))
@@ -143,7 +153,7 @@ class Window:
         button_explore = Button(self._frame, text = "Browse Files", command = browseFiles)
         button_explore.grid(column = 0, row = 4)  
 
-        button_exit = Button(self._frame, text = "Exit", command = exit)
+        button_exit = Button(self._frame, text = "Exit", command = lambda: [self._destroy_UpdateState(1)])
         button_exit.grid(column = 0,row = 5)
 
         fig = Figure(figsize=(15, 8))
@@ -160,14 +170,11 @@ class Window:
         simulation.blood = self._blood.get()
         simulation.wound = self._wound.get()
         simulation.sound = self._sound.get()
-        del self._blood
-        del self._wound
-        del self._sound
+ 
 
     # Simulation SetupWindow
     def __DrawWindow3(self):
-        #TODO: change to state 8 once server issues are resolved
-        button_scenario =  Button(self._frame, text="Begin", command= lambda: [self._destroy_UpdateState(4)], font=("Arial", largetitletext), bg="firebrick3", fg="white", state='disabled')
+        button_scenario =  Button(self._frame, text="Begin", command= lambda: [self._destroy_UpdateState(8)], font=("Arial", largetitletext), bg="firebrick3", fg="white", state='disabled')
 
         def updateScenarioButtonState():
             button_scenario['state'] = 'normal' if self._wound and self._blood and self._sound else 'disabled'
@@ -230,8 +237,7 @@ class Window:
         checkbox_off.grid(row=1, column=1,padx=0,  pady=0)
 
         #Button to enter scenario in middle frame
-        # TODO: change to state 8
-        button_scenario = Button(self._frame, text="Begin", command= lambda: [self.updateOptions(), self._destroy_UpdateState(4)], font=("Arial", largetitletext), bg="firebrick3", fg="white", state='disabled')
+        button_scenario = Button(self._frame, text="Begin", command= lambda: [self.updateOptions(), self._destroy_UpdateState(8)], font=("Arial", largetitletext), bg="firebrick3", fg="white", state='disabled')
         button_scenario.place(x=.345*w, y=.6*h, height=.15*h, width=.3*w)
 
         button_quit = Button(self._frame, text="Home", command = lambda: [self._destroy_UpdateState(1)],  font=("Arial", largetitletext),bg="firebrick3",fg="white")
@@ -253,34 +259,49 @@ class Window:
         checkbox_off.grid(row=3, column=0,padx=0,  pady=10)
 
 
+
+    def stopSimulation(self):
+        simulation.P = False
+        self._destroy_UpdateState(1)
             
     # Simulation Window
     def __DrawWindow4(self):
-        # TODO: Clean Window
+        #TODO: Add an exit button
         bleedoutbarframe = LabelFrame(self._frame,bg="firebrick3", fg="white")
-        bleedoutbarframe.grid(row=0, column=0, sticky="nes")
+        bleedoutbarframe.grid(row=0, column=0, sticky="n")
         pressureframe = LabelFrame(self._frame,bg="firebrick3", fg="white")
-        pressureframe.grid(row=0, column=1, sticky="nws")
+        pressureframe.grid(row=0, column=1, sticky="n")
+        timeframe = LabelFrame(self._frame,bg="firebrick3", fg="white")
+        timeframe.grid(row=0, column=2, sticky="n")
        
         # Add the frame that the bleedout bar will go in
         label_bleedoutbar = Label(bleedoutbarframe, text="Blood Loss", bg="firebrick3", fg="white", font=("Arial", mediumtitletext), padx=70, pady=10)
         label_bleedoutbar.grid(row=0, column=0,columnspan=1)
-        axis_bleedoutbar = Label(bleedoutbarframe, text='-    3.0\n\n\n-    2.5\n\n\n-    2.0\n\n\n-    1.5\n\n\n-    1.0\n\n\n-    0.5\n\n\n- 0.0 (L)', font=('Arial', 35), fg="white", bg="firebrick3")
-        axis_bleedoutbar.grid(row=1, column = 1)
-        progbar = ttk.Progressbar(bleedoutbarframe, length=870, orient="vertical", mode="determinate",takefocus=False, maximum=3)      
+        progbar = ttk.Progressbar(bleedoutbarframe, length=775, orient="vertical", mode="determinate",takefocus=False, maximum=3)      
         progbar.grid(row=1, column=0, ipadx=375, sticky="n")
         progbar['value'] = 0
 
         # Add frame that presure bar will go in
         label_pressurebar = Label(pressureframe, text="Pressure", bg="firebrick3", fg="white", font=("Arial", mediumtitletext), padx=70, pady=10)
-        label_pressurebar.grid(row=0, column=0,columnspan=1)
-        axis_bleedoutbar = Label(pressureframe, text='-    20\n\n\n-    15\n\n\n-    10\n\n\n\n-    5\n\n\n- 0 (LBS)', font=('Arial', 35), fg="white", bg="firebrick3")
-        axis_bleedoutbar.grid(row=1, column = 1)
-        pressurebar = ttk.Progressbar(pressureframe, length=870, orient="vertical", mode="determinate",takefocus=False, maximum=20)
+        label_pressurebar.grid(row=0, column=0,columnspan=1) 
+        pressurebar = ttk.Progressbar(pressureframe, length=775, orient="vertical", mode="determinate",takefocus=False, maximum=20)
         pressurebar.grid(row=1, column=0, ipadx=375, sticky="n")
         pressurebar['value'] = 0
 
-       
+        # Add frame for time to stb
+        label_time = Label(timeframe, text="STB", bg="firebrick3", fg="white", font=("Arial", mediumtitletext), padx=70, pady=10)
+        label_time.grid(row=0, column=0,columnspan=1)
+        stbBar = ttk.Progressbar(timeframe, length=775, orient="vertical", mode="determinate",takefocus=False, maximum=simulation.timetostopthebleed)
+        stbBar.grid(row=1, column=0, ipadx=375, sticky="n")
+        stbBar['value'] = 0
+
+
+        # Add Frame for exit button will be on bottom
+        frame_exit = LabelFrame(self._frame, bg="firebrick3", fg="white")
+        frame_exit.grid(row=1, column=0, columnspan=3, sticky="swe")
+        button_exit = Button(frame_exit, text="Exit", command = lambda: [self.stopSimulation()], bg="firebrick3", fg="white", font=("Arial", largetext))
+        button_exit.grid(row=0, column=0, pady=10)
+              
         def UpdateData(event1):
 
             # Dequeue
@@ -288,10 +309,13 @@ class Window:
 
             # Check if at end
             if type(idx) == bool:
+                if not self._guest:
+                    network.submit_TrainingData(simulation.ma_xlist, simulation.timelist, simulation.pressurelist, simulation.blood_loss)
+        
                 if idx:
-                    self._root.event_generate("<<event4>>", state=str(1))
+                    self._destroy_UpdateState(6)
                 else:
-                    self._root.event_generate("<<event4>>", state=str(0))
+                    self._destroy_UpdateState(5)
                 return
 
             # Currently below has a race condition but has not crashed yet
@@ -299,7 +323,10 @@ class Window:
             progbar['value'] = simulation.blood_loss[idx]
 
             # Update Pressure
-            pressurebar['value'] = simulation.pressurelist[idx] 
+            pressurebar['value'] = simulation.pressurelist[idx]
+
+            # Update Time
+            stbBar['value'] = simulation.STB_timer
 
 
         self._root.bind("<<event1>>", UpdateData)
@@ -317,9 +344,9 @@ class Window:
         label_home.pack(fill = X)
         # Add two buttons underneath the label of home page
 
-        button_scenario = Button(self._frame, text="View\nGraph", command = lambda: [self._destory_UpdateState(7)], bg="firebrick3",fg="white",  font=("Arial", largetitletext), padx=10, pady=200)
+        button_scenario = Button(self._frame, text="View\nGraph", command = lambda: [self._destroy_UpdateState(7)], bg="firebrick3",fg="white",  font=("Arial", largetitletext), padx=10, pady=200)
         button_scenario.place(x=.025*w, y=.25*h, height=.675*h, width=.47*w)
-        button_retrieve = Button(self._frame, text="Select\nNew User", command = lambda: [self._destory_UpdateState(8)], bg="firebrick3",fg="white", font=("Arial", largetitletext), padx=10, pady=200)
+        button_retrieve = Button(self._frame, text="Select\nNew User", command = lambda: [self._destroy_UpdateState(8)], bg="firebrick3",fg="white", font=("Arial", largetitletext), padx=10, pady=200)
         button_retrieve.place(x=.5025*w, y=.25*h, height=.675*h, width=.47*w)
 
 
@@ -341,11 +368,11 @@ class Window:
 
     # Completed Simulation Graph Window
     def __DrawWindow7(self):
-        button_home = Button(self._frame, text="Select\nNew User", command = lambda: [self._destroy_UpdateState(8)], bg="firebrick3",fg="white", font=("Arial", largetext))
+        button_home = Button(self._frame, text="New\nUser", command = lambda: [self._destroy_UpdateState(8)], bg="firebrick3",fg="white", font=("Arial", largetext))
         button_home.place(x=0, y=.4*h, height=.2*h, width=.125*w)
         #Create graph frame
         frame2 = Frame(self._frame, pady=25, bg="gray75")
-        frame2.place(x=.125*w, y=0, height=h, width=.85*w)
+        frame2.place(x=.125*w, y=0, height=0.95*h, width=.875*w)
        
         #Add the frame that the graph will go in
         plt.rcParams.update({'font.size':22})
@@ -361,8 +388,13 @@ class Window:
         line_20ref, = ax.plot(simulation.timelist, simulation.ma_xlist, label='Target Pressure', linewidth=5, color = 'r' )
         ax.legend(loc='upper left', fontsize=20)
 
+        # add the canvas for the graph
+        canvas_graph = FigureCanvasTkAgg(fig, master=frame2)
+        canvas_graph.draw()
+        canvas_graph.get_tk_widget().pack(fill=BOTH, expand=1)
 
     # Class Window
+    # TODO: Fix button states to reset on returning to window
     def __DrawWindow8(self):
         # Function to enable/disable the "Start" button based on whether a user is selected
 
@@ -431,14 +463,19 @@ class Window:
         button_make_request.grid(row=2, column=0, padx=40, pady=20)# Button to go back to the home window
 
         button_start = Button(self._frame, text="Start", command=start_simulation, font=("Arial", largetext), bg="firebrick3", fg="white", state='disabled')
-        button_start.place(x=.345*w, y=.325*h, height=.15*h, width=.3*w)
+        button_start.place(x=.345*w, y=.250*h, height=.15*h, width=.3*w)
        
         button_back = Button(self._frame, text="Go Back", command= lambda: [self._destroy_UpdateState(3)], bg="firebrick3", fg="white", font=("Arial", largetext))
-        button_back.place(x=.345*w, y=.5*h, height=.15*h, width=.3*w)
+        button_back.place(x=.345*w, y=.6*h, height=.15*h, width=.3*w)
+
+        # Button For Guest Demo
+        button_guest = Button(self._frame, text="Guest", command= lambda: [self._destroy_UpdateState(4), self.setGuest()], bg="firebrick3", fg="white", font=("Arial", largetext))
+        button_guest.place(x=.345*w, y=.425*h, height=.15*h, width=.3*w)
+
 
         # Button to go back to the home window
         button_home = Button(self._frame, text="Home", command= lambda: [self._destroy_UpdateState(1)], bg="firebrick3", fg="white", font=("Arial", largetext))
-        button_home.place(x=.345*w, y=.675*h, height=.15*h, width=.3*w)
+        button_home.place(x=.345*w, y=.775*h, height=.15*h, width=.3*w)
 
 
         # Scrollable Listbox to display users
@@ -458,5 +495,6 @@ class Window:
             if not simulation.eventQueue.empty():
                 self._root.event_generate("<<event1>>")
             sleep(0.001)
+        quit()
                 
 

@@ -13,7 +13,7 @@ import threading
 # Local Imports
 from src.observer import Observer
 stateObserver = Observer()
-from src.api import *
+from src.api import API_Network
 network = API_Network("http://tosmcoe0005.ttu.edu:3000")
 from src.sim import Simulation
 simulation = Simulation()
