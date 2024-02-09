@@ -266,7 +266,6 @@ class Window:
             
     # Simulation Window
     def __DrawWindow4(self):
-        #TODO: Add an exit button
         bleedoutbarframe = LabelFrame(self._frame,bg="firebrick3", fg="white")
         bleedoutbarframe.grid(row=0, column=0, sticky="n")
         pressureframe = LabelFrame(self._frame,bg="firebrick3", fg="white")
@@ -310,7 +309,7 @@ class Window:
             # Check if at end
             if type(idx) == bool:
                 if not self._guest:
-                    network.submit_TrainingData(simulation.ma_xlist, simulation.timelist, simulation.pressurelist, simulation.blood_loss)
+                    network.submit_TrainingData(simulation.ma_xlist, simulation.timelist, simulation.pressurelist, simulation.blood_loss, idx)
         
                 if idx:
                     self._destroy_UpdateState(6)

@@ -42,7 +42,7 @@ class Simulation:
         self.ma_xlist = []
         self.blood_loss = []
         self.P = True                   # P: "Program Running"
-        self.timetostopthebleed = 1
+        self.timetostopthebleed = 15
 
 
         self.MAX_MOTOR_SPEED = 12000    # Initialize with default value
@@ -83,10 +83,15 @@ class Simulation:
         self.BloodLost = 0
 
         self.bus = None
-        
-        self.timestamp2 = 0
-        self.Falloffcount = 0
-        self.soundtimer = 0
+
+        self.pSound = False
+        self.moanIdx = 0
+        self.presIdx = 0
+        self.moanSounds = ["assets/sounds/Moan1.mp3", "assets/sounds/Moan2.mp3", "assets/sounds/Moan3.mp3"]
+        self.presSounds = ["assets/sounds/30secondscream.mp3", "assets/sounds/scream3.mp3", "assets/sounds/getofflong.mp3"]
+        self.pLength = len(self.presSounds)
+        self.mLength = len(self.moanSounds)
+
 
         #TODO Throw error codes for when and if there is something that can't be in a file name and have them try again
         self.filename = (f"A - Previous Trial.txt")
@@ -361,41 +366,24 @@ class Simulation:
         if self.sound != 1:
             return
 
-        self.timestamp1 = perf_counter()
-        if self.timestamp2 == 0:
-            self.timestamp1 = self.timestamp2
+        if self.DATA < 20:
+            if self.DATA < 10 and pygame.mixer.music.get_busy():
+                pygame.mixer.music.stop()
+            elif not pygame.mixer.music.get_busy() or self.pSound:
+                if pygame.mixer.music.get_busy(): pygame.mixer.music.stop()
+                pygame.mixer.music.load(self.moanSounds[self.moanIdx])
+                pygame.mixer.music.play()
+                self.moanIdx = (self.moanIdx + 1) % self.mLength
+            self.pSound = False
 
-        self.soundtimer = self.timestamp1-self.timestamp2
-        if self.DATA >= 20 and self.soundtimer == 0:
-            self.timestamp2 = perf_counter()
-            if self.Falloffcount in [0,3,6,9,12]:
-                pygame.mixer.music.stop()
-                pygame.mixer.music.load("assets/sounds/30secondscream.mp3")
-                pygame.mixer.music.set_volume(1.0)
-                pygame.mixer.music.play()                    
-                   
-            elif self.Falloffcount in [1,4,7,10,13]:
-                pygame.mixer.music.stop()
-                pygame.mixer.music.load("assets/sounds/scream3.mp3")
-                pygame.mixer.music.set_volume(1.0)
+        else:
+            if not pygame.mixer.music.get_busy() or not self.pSound:
+                if pygame.mixer.music.get_busy(): pygame.mixer.music.stop()
+                pygame.mixer.music.load(self.presSounds[self.presIdx])
                 pygame.mixer.music.play()
-                 
-            else:
-                pygame.mixer.music.stop()
-                pygame.mixer.music.load("assets/sounds/getofflong.mp3")
-                pygame.mixer.music.set_volume(1.0)
-                pygame.mixer.music.play()
-                   
-        if self.DATA < 20 and self.DATA > 10 and self.soundtimer != 0:
-            self.Falloffcount += 1
-            pygame.mixer.music.stop()
-            pygame.mixer.music.load("assets/sounds/Moan1.mp3")
-            pygame.mixer.music.set_volume(0.5)
-            pygame.mixer.music.play()
-            timestamp2 = 0
-           
-        if self.DATA < 10 :
-            pygame.mixer.music.stop()
+                self.presIdx = (self.presIdx + 1) % self.pLength
+            self.pSound = True
+       
 
     #========================================================================
     # GUI Data Pass

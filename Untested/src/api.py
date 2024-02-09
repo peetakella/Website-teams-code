@@ -112,6 +112,7 @@ class API_Network:
     def User(self):
         self.__selected_User = None
 
-    def submit_TrainingData(self,  ma_xlist, x_list, y_list, blood_loss):
+    def submit_TrainingData(self,  ma_xlist, x_list, y_list, blood_loss, passed):
         self.__selected_User.setTrainingData(ma_xlist, x_list, y_list, blood_loss)
+        self.make_http_put_request(passed)
 
