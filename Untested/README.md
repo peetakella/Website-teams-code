@@ -12,7 +12,7 @@ This project is currently unlicensed, but will likely be puruing either a GLPL o
 
 ## Installation and Usage
 With python3.11 > installed the user should be able to install all the dependencies on a rasberry pi with `pip install -r requirements.txt`
-**Note** Previous versions had been built with python3.9 but the newer features will require a newer python version.
+**Note:** Previous versions had been built with python3.9 but the newer features will require a newer python version.
 
 In the future this section will include how to set up the hardware for the rasberry pi as well.
 

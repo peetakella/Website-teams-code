@@ -6,6 +6,7 @@ Description:    GUI class for the better bleeding control application
 Version:        2.0
 ==================================================================================
 """
+# Version 3 Should break this object down more unfortunately version one was so intertwined that it was not possible to do so for this version
 
 from time import sleep, perf_counter
 import tkinter as tk
@@ -47,7 +48,7 @@ class Window:
         self._root.title("Better Bleeding Control")
         self._root.configure(bg="gray75")
         self._root.geometry("{}x{}".format(w, h)) # Using size from version one
-        self._root.attributes('-fullscreen', True)
+        self._root.attributes('-fullscreen', True) # This only makes a full screen application about half the time
         self._frame = Frame(self._root)
         self._frame.pack(expand=True, fill=BOTH)
 
@@ -87,7 +88,8 @@ class Window:
 
     # Method For Changing Guest Demo
     def setGuest(self):
-        self._guest = False
+        self._guest = False # prevents a network call after sim
+        simulation.isGuest = True
 
 
     #==================================================================================================
@@ -115,6 +117,7 @@ class Window:
         button_retrieve.place(x=.5025*w, y=.25*h, height=.675*h, width=.47*w)
 
     # Data Retrieval Window
+    # The author of this window is not listed above I am unsure of the name
     def __DrawWindow2(self):
         x = []
         m = []
@@ -266,35 +269,33 @@ class Window:
             
     # Simulation Window
     def __DrawWindow4(self):
-        bleedoutbarframe = LabelFrame(self._frame,bg="firebrick3", fg="white")
-        bleedoutbarframe.grid(row=0, column=0, sticky="n")
-        pressureframe = LabelFrame(self._frame,bg="firebrick3", fg="white")
-        pressureframe.grid(row=0, column=1, sticky="n")
-        timeframe = LabelFrame(self._frame,bg="firebrick3", fg="white")
-        timeframe.grid(row=0, column=2, sticky="n")
-       
-        # Add the frame that the bleedout bar will go in
-        label_bleedoutbar = Label(bleedoutbarframe, text="Blood Loss", bg="firebrick3", fg="white", font=("Arial", mediumtitletext), padx=70, pady=10)
+
+        # Bar Frame and Labels
+        progBarsFrame = LabelFrame(self._frame, bg="firebrick3", fg="white")
+        progBarsFrame.grid(row=0, column=0, columnspan=3, sticky="n")
+        label_bleedoutbar = Label(progBarsFrame, text="Blood Loss", bg="firebrick3", fg="white", font=("Arial", mediumtitletext), padx=70, pady=10)
         label_bleedoutbar.grid(row=0, column=0,columnspan=1)
-        progbar = ttk.Progressbar(bleedoutbarframe, length=775, orient="vertical", mode="determinate",takefocus=False, maximum=3)      
-        progbar.grid(row=1, column=0, ipadx=375, sticky="n")
+        label_pressurebar = Label(progBarsFrame, text="Pressure", bg="firebrick3", fg="white", font=("Arial", mediumtitletext), padx=70, pady=10)
+        label_pressurebar.grid(row=0, column=1,columnspan=1)
+        label_time = Label(progBarsFrame, text="STB", bg="firebrick3", fg="white", font=("Arial", mediumtitletext), padx=70, pady=10)
+        label_time.grid(row=0, column=2,columnspan=1)
+
+        # Bleedout Bar
+        progbar = ttk.Progressbar(progBarsFrame, length=780, orient="vertical", mode="determinate",takefocus=False, maximum=3)
+        progbar.grid(row=1, column=0, ipadx=325, sticky="ne")
         progbar['value'] = 0
 
-        # Add frame that presure bar will go in
-        label_pressurebar = Label(pressureframe, text="Pressure", bg="firebrick3", fg="white", font=("Arial", mediumtitletext), padx=70, pady=10)
-        label_pressurebar.grid(row=0, column=0,columnspan=1) 
-        pressurebar = ttk.Progressbar(pressureframe, length=775, orient="vertical", mode="determinate",takefocus=False, maximum=20)
-        pressurebar.grid(row=1, column=0, ipadx=375, sticky="n")
+        # Pressure Bar
+        pressurebar = ttk.Progressbar(progBarsFrame, length=780, orient="vertical", mode="determinate",takefocus=False, maximum=simulation.upthreshold)
+        pressurebar.grid(row=1, column=1, ipadx=325, sticky="n")
         pressurebar['value'] = 0
 
-        # Add frame for time to stb
-        label_time = Label(timeframe, text="STB", bg="firebrick3", fg="white", font=("Arial", mediumtitletext), padx=70, pady=10)
-        label_time.grid(row=0, column=0,columnspan=1)
-        stbBar = ttk.Progressbar(timeframe, length=775, orient="vertical", mode="determinate",takefocus=False, maximum=simulation.timetostopthebleed)
-        stbBar.grid(row=1, column=0, ipadx=375, sticky="n")
+        # Time at Pressure Bar
+        stbBar = ttk.Progressbar(progBarsFrame, length=780, orient="vertical", mode="determinate",takefocus=False, maximum=simulation.timetostopthebleed)
+        stbBar.grid(row=1, column=2, ipadx=325, sticky="nw")
         stbBar['value'] = 0
-
-
+        
+      
         # Add Frame for exit button will be on bottom
         frame_exit = LabelFrame(self._frame, bg="firebrick3", fg="white")
         frame_exit.grid(row=1, column=0, columnspan=3, sticky="swe")
@@ -367,6 +368,7 @@ class Window:
 
     # Completed Simulation Graph Window
     def __DrawWindow7(self):
+        # NOTE: This only loads the current data in the sim object
         button_home = Button(self._frame, text="New\nUser", command = lambda: [self._destroy_UpdateState(8)], bg="firebrick3",fg="white", font=("Arial", largetext))
         button_home.place(x=0, y=.4*h, height=.2*h, width=.125*w)
         #Create graph frame
@@ -394,6 +396,7 @@ class Window:
 
     # Class Window
     # TODO: Fix button states to reset on returning to window
+    # TODO: Currently this doesn't require all options be set
     def __DrawWindow8(self):
         # Function to enable/disable the "Start" button based on whether a user is selected
 
@@ -412,6 +415,7 @@ class Window:
             selected_index = user_listbox.curselection()
             if selected_index:
                 # Change state to simulation
+                self.updateOptions()
                 self._destroy_UpdateState(4)
 
         def request():
@@ -468,7 +472,7 @@ class Window:
         button_back.place(x=.345*w, y=.6*h, height=.15*h, width=.3*w)
 
         # Button For Guest Demo
-        button_guest = Button(self._frame, text="Guest", command= lambda: [self._destroy_UpdateState(4), self.setGuest()], bg="firebrick3", fg="white", font=("Arial", largetext))
+        button_guest = Button(self._frame, text="Guest", command= lambda: [self.updateOptions(), self._destroy_UpdateState(4), self.setGuest()], bg="firebrick3", fg="white", font=("Arial", largetext))
         button_guest.place(x=.345*w, y=.425*h, height=.15*h, width=.3*w)
 
 

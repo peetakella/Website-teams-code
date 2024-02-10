@@ -8,6 +8,7 @@ Version:        2.0
 """
 # NOTE: The following are references for the sensors based on the wound type
 # These addresses were taken directly from version one they have been hardcoded to allow for speedup
+# Version 3 Should break this object down more unfortunately version one was so intertwined that it was not possible to do so for this version
 """
 Sensor 1: 0x28 Juntion
 Sensor 2: 0x27 Higher arm sensor
@@ -24,12 +25,15 @@ from smbus2 import SMBus
 from math import log
 from queue import Queue
 import pygame
+from random import shuffle
 
 pygame.mixer.init()
 
 class Simulation:
     # Initializer will eventually take parameters from simulation type`
     def __init__(self):
+
+        self.isGuest = True
 
         self.blood = None
         self.wound = None
@@ -42,7 +46,7 @@ class Simulation:
         self.ma_xlist = []
         self.blood_loss = []
         self.P = True                   # P: "Program Running"
-        self.timetostopthebleed = 15
+        self.timetostopthebleed = 5     # in seconds
 
 
         self.MAX_MOTOR_SPEED = 12000    # Initialize with default value
@@ -53,7 +57,6 @@ class Simulation:
 
         self.upthreshold = 20
         self.errorthreshold = 40
-        self.running_max = 0
         self.STB_timer = 0
         self.cycletime = 0
 
@@ -94,7 +97,7 @@ class Simulation:
 
 
         #TODO Throw error codes for when and if there is something that can't be in a file name and have them try again
-        self.filename = (f"A - Previous Trial.txt")
+        self.filename = None #(f"A - Previous Trial.txt")
 
 
     #========================================================================
@@ -144,15 +147,26 @@ class Simulation:
         self.tic5 = None
         self.totaltime = 0
 
+        self.errorthreshold = 40
+        self.STB_timer = 0
+        self.cycletime = 0
+
         self.BloodLost = 0
- 
-        self.timestamp2 = 0
-        self.Falloffcount = 0
-        self.soundtimer = 0
+
+        #Shuffle sound Lists
+        shuffle(self.moanSounds)
+        shuffle(self.presSounds)
+
         #========================================================================
         # End of reset
-        
-        open(self.filename, "w").close() # resets file so only most resent data is stored
+       
+        if self.filename:
+            open(self.filename, "w").close() # resets file so only most resent data is stored
+
+        if self.isGuest:
+            self.filename = (f"Trials/Guest_Trial.txt") # only one guest file to save space
+        else:
+            self.filename = (f"Trials/Network_Trial.txt") # TODO: Name file userName and TrialType
         
         self.tic1 = perf_counter()
 
@@ -165,9 +179,10 @@ class Simulation:
 
         self.ratio = (self.MAX_MOTOR_SPEED - 100) / (self.upthreshold - 0)
 
-        if not self.bus:
-            self.bus = SMBus(1)                         #I2C channel 1 is connected to the GPIO pins 2 (SDA) and 4 (SCL)
-            sleep(1)                                    # This sleep prevents io error
+        if self.bus:
+            self.bus.close()                        # Remove this line to break the program I dare you, you wont even notice at first
+        self.bus = SMBus(1)                         #I2C channel 1 is connected to the GPIO pins 2 (SDA) and 4 (SCL)
+        sleep(1)                                    # This sleep prevents io error
            
         #set up digital io
         GPIO.setwarnings(False)                     #do not show any warnings
@@ -181,7 +196,7 @@ class Simulation:
         GPIO.setup(self.arm, GPIO.OUT)
         GPIO.setup(self.junction, GPIO.OUT)
         if not self.p:
-            self.p=GPIO.PWM(self.PUL, 100) #PWM Function is defined
+            self.p=GPIO.PWM(self.PUL, 100) #PWM Function is defined can only be initalized once
         self.SENSOR_ADDRESS = 0x28 if self.wound == 1 else 0x27 if self.wound == 2 else 0x26
 
 
@@ -211,6 +226,8 @@ class Simulation:
         self.__playSound()
         self.__GUIDataPass()
 
+    #========================================================================
+    # Unfortunatly the testing module required a slightly different run initialization
     def runTest(self):
         self.tic1 = perf_counter()
 
@@ -366,13 +383,15 @@ class Simulation:
         if self.sound != 1:
             return
 
+        # Moans or No sound for less than target pressure
         if self.DATA < 20:
-            if self.DATA < 10 and pygame.mixer.music.get_busy():
+            if self.DATA < 10:
                 pygame.mixer.music.stop()
             elif not pygame.mixer.music.get_busy() or self.pSound:
                 if pygame.mixer.music.get_busy(): pygame.mixer.music.stop()
                 pygame.mixer.music.load(self.moanSounds[self.moanIdx])
                 pygame.mixer.music.play()
+                # Cycle through shuffled moan sounds
                 self.moanIdx = (self.moanIdx + 1) % self.mLength
             self.pSound = False
 
@@ -381,6 +400,7 @@ class Simulation:
                 if pygame.mixer.music.get_busy(): pygame.mixer.music.stop()
                 pygame.mixer.music.load(self.presSounds[self.presIdx])
                 pygame.mixer.music.play()
+                # Cycle through shuffled pressure sounds
                 self.presIdx = (self.presIdx + 1) % self.pLength
             self.pSound = True
        
@@ -392,7 +412,7 @@ class Simulation:
         self.blood_loss.append(self.BloodLost)
         self.pressurelist.append(self.DATA)
         self.timelist.append(self.totaltime)
-        self.ma_xlist.append(20)
+        self.ma_xlist.append(self.upthreshold)
 
         self.eventQueue.put(self.eventIndex)
         self.eventIndex += 1
