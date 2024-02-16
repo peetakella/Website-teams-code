@@ -43,6 +43,7 @@ class Window:
         self._sound = IntVar()
 
         self._guest = True
+        self._lastisSuccess = None
 
         # Initialize Window
         self._root.title("Better Bleeding Control")
@@ -65,9 +66,7 @@ class Window:
             case 4:
                 self.__DrawWindow4()
             case 5:
-                self.__drawWindow5()
-            case 6:
-                self.__DrawWindow6()
+                self.__DrawWindow5()
             case 7:
                 self.__DrawWindow7()
             case 8:
@@ -87,10 +86,8 @@ class Window:
 
 
     # Method For Changing Guest Demo
-    def setGuest(self):
-        self._guest = False # prevents a network call after sim
-        simulation.isGuest = True
-
+    def notGuest(self):
+        self._guest = False # prevents a network call after simulation
 
     #==================================================================================================
     # Drawing Methods
@@ -309,13 +306,11 @@ class Window:
 
             # Check if at end
             if type(idx) == bool:
-                if not self._guest:
-                    network.submit_TrainingData(simulation.ma_xlist, simulation.timelist, simulation.pressurelist, simulation.blood_loss, idx)
-        
-                if idx:
-                    self._destroy_UpdateState(6)
-                else:
-                    self._destroy_UpdateState(5)
+                if self._guest:
+                    network.submit_TrainingData(simulation.ma_xlist, simulation.timelist, simulation.pressurelist, simulation.blood_loss, idx, self._wound)
+      
+                self._lastisSuccess = idx
+                self._destroy_UpdateState(5) 
                 return
 
             # Currently below has a race condition but has not crashed yet
@@ -332,17 +327,15 @@ class Window:
         self._root.bind("<<event1>>", UpdateData)
 
 
-
-
-    # Failed Simulation Window
-    def __drawWindow5(self):
-        #Add Title 
+    # Post Simulation Window
+    def __DrawWindow5(self):
         frame1 = LabelFrame(self._frame, pady=25, fg="black", bg="gray75")
         frame1.place(x=.025*w, y=.025*h, height=.2*h, width=.95*w)
-        # Add a label at the top of the window
-        label_home = Label(frame1, text="You Failed", font=("Arial", largetitletext), fg="black", bg="gray75")
+
+        text = "You Stopped The Bleed" if  self._lastisSuccess else "You Failed"
+
+        label_home = Label(frame1, text=text, font=("Arial", largetitletext), fg="black", bg="gray75")
         label_home.pack(fill = X)
-        # Add two buttons underneath the label of home page
 
         button_scenario = Button(self._frame, text="View\nGraph", command = lambda: [self._destroy_UpdateState(7)], bg="firebrick3",fg="white",  font=("Arial", largetitletext), padx=10, pady=200)
         button_scenario.place(x=.025*w, y=.25*h, height=.675*h, width=.47*w)
@@ -350,23 +343,9 @@ class Window:
         button_retrieve.place(x=.5025*w, y=.25*h, height=.675*h, width=.47*w)
 
 
-    # Successful Simulation Window
-    def __DrawWindow6(self):
-        #Add Title frame        
-        frame1 = LabelFrame(self._frame, pady=25, fg="black", bg="gray75")
-        frame1.place(x=.025*w, y=.025*h, height=.2*h, width=.95*w)
-        # Add a label at the top of the window
-        label_home = Label(frame1, text="You Stopped The Bleed", font=("Arial", largetitletext), fg="black", bg="gray75")
-        label_home.pack(fill = X)
-        # Add two buttons underneath the label of home page
 
-        button_scenario = Button(self._frame, text="View\nGraph", command = lambda: [self._destroy_UpdateState(7)], bg="firebrick3", fg="white", font=("Arial", largetitletext), padx=10, pady=200)
-        button_scenario.place(x=.025*w, y=.25*h, height=.675*h, width=.47*w)
-        button_retrieve = Button(self._frame, text="Select\nNew User", command = lambda: [self._destroy_UpdateState(8)], bg="firebrick3",fg="white", font=("Arial", largetitletext), padx=10, pady=200)
-        button_retrieve.place(x=.5025*w, y=.25*h, height=.675*h, width=.47*w)
-
-
-    # Completed Simulation Graph Window
+    # Post Simulation Graph Analysis Window
+    # TODO: Add some statistical analysis and annotations to the graph
     def __DrawWindow7(self):
         # NOTE: This only loads the current data in the sim object
         button_home = Button(self._frame, text="New\nUser", command = lambda: [self._destroy_UpdateState(8)], bg="firebrick3",fg="white", font=("Arial", largetext))
@@ -418,7 +397,7 @@ class Window:
                 self.updateOptions()
                 self._destroy_UpdateState(4)
 
-        def request():
+        def request(): 
             network.make_http_get_request(input_entry.get())
             populate_listbox()
 
@@ -462,17 +441,17 @@ class Window:
         input_entry.grid(row=1, column=0, padx=40, pady=20)
 
         # Button to make HTTP Request (or perform desired action)
-        button_make_request = Button(frameL, text="Connect", font=("Arial", smalltitletext), bg="firebrick4", fg="white", command=lambda: request())
+        button_make_request = Button(frameL, text="Connect", font=("Arial", smalltitletext), bg="firebrick4", fg="white", command=lambda: [request()])
         button_make_request.grid(row=2, column=0, padx=40, pady=20)# Button to go back to the home window
 
-        button_start = Button(self._frame, text="Start", command=start_simulation, font=("Arial", largetext), bg="firebrick3", fg="white", state='disabled')
+        button_start = Button(self._frame, text="Start", command=lambda: [start_simulation()], font=("Arial", largetext), bg="firebrick3", fg="white", state='disabled')
         button_start.place(x=.345*w, y=.250*h, height=.15*h, width=.3*w)
        
         button_back = Button(self._frame, text="Go Back", command= lambda: [self._destroy_UpdateState(3)], bg="firebrick3", fg="white", font=("Arial", largetext))
         button_back.place(x=.345*w, y=.6*h, height=.15*h, width=.3*w)
 
         # Button For Guest Demo
-        button_guest = Button(self._frame, text="Guest", command= lambda: [self.updateOptions(), self._destroy_UpdateState(4), self.setGuest()], bg="firebrick3", fg="white", font=("Arial", largetext))
+        button_guest = Button(self._frame, text="Guest", command= lambda: [self.updateOptions(), self._destroy_UpdateState(4), self.notGuest()], bg="firebrick3", fg="white", font=("Arial", largetext))
         button_guest.place(x=.345*w, y=.425*h, height=.15*h, width=.3*w)
 
 

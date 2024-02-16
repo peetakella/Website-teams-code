@@ -64,19 +64,20 @@ class API_Network:
 
     #===============================================================================
     # Method for making put request to API
-    def make_http_put_request(self, success: bool):
+    def make_http_put_request(self, success: bool, woundType):
 
-        #TODO: update for training type option
+        trainingType = "Packing" if woundType == 1 else "Tourniquet" if woundType == 2 else "Pressure"
+
         if not (self.Class and self.User):
             raise Exception("Class and User must be set before making PUT request")
 
         url = f"{self.__address}/updateTrainingData"
         data =  {'class_id': self.__current_class.class_id, 'user_id': self.__selected_User.user_id,
                  'x_list': self.__selected_User.training_data['x_list'], 'y_list': self.__selected_User.training_data['y_list'],
-                 'bloodloss': self.__selected_User.training_data['blood_loss'], 'passed': success}
+                 'bloodloss': self.__selected_User.training_data['blood_loss'], 'passed': success, 'type': trainingType}
 
         try:
-           response = request.put(url, json=data)
+           response = requests.put(url, json=data)
         except Exception as e:
             print(f"Error making HTTP request: {e}")
 
@@ -112,7 +113,7 @@ class API_Network:
     def User(self):
         self.__selected_User = None
 
-    def submit_TrainingData(self,  ma_xlist, x_list, y_list, blood_loss, passed):
+    def submit_TrainingData(self,  ma_xlist, x_list, y_list, blood_loss, passed, woundType):
         self.__selected_User.setTrainingData(ma_xlist, x_list, y_list, blood_loss)
-        self.make_http_put_request(passed)
+        self.make_http_put_request(passed, woundType)
 

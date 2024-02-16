@@ -11,8 +11,8 @@ Version:        2.0
 # Version 3 Should break this object down more unfortunately version one was so intertwined that it was not possible to do so for this version
 """
 Sensor 1: 0x28 Juntion
-Sensor 2: 0x27 Higher arm sensor
-Sensor 3: 0x26 Lower arm sensor
+Sensor 2: 0x26 Higher arm sensor
+Sensor 3: 0x27 Lower arm sensor
 
 dummy_command=0x00
 offset=1000
@@ -32,8 +32,6 @@ pygame.mixer.init()
 class Simulation:
     # Initializer will eventually take parameters from simulation type`
     def __init__(self):
-
-        self.isGuest = True
 
         self.blood = None
         self.wound = None
@@ -94,6 +92,8 @@ class Simulation:
         self.presSounds = ["assets/sounds/30secondscream.mp3", "assets/sounds/scream3.mp3", "assets/sounds/getofflong.mp3"]
         self.pLength = len(self.presSounds)
         self.mLength = len(self.moanSounds)
+
+        self.sensorCalibration = 1
 
 
         #TODO Throw error codes for when and if there is something that can't be in a file name and have them try again
@@ -163,10 +163,7 @@ class Simulation:
         if self.filename:
             open(self.filename, "w").close() # resets file so only most resent data is stored
 
-        if self.isGuest:
-            self.filename = (f"Trials/Guest_Trial.txt") # only one guest file to save space
-        else:
-            self.filename = (f"Trials/Network_Trial.txt") # TODO: Name file userName and TrialType
+        self.filename = (f"Trials/previousTrial.txt") 
         
         self.tic1 = perf_counter()
 
@@ -176,6 +173,10 @@ class Simulation:
             self.MAX_MOTOR_SPEED = 2500
 
         if self.wound == 3: self.errorthreshold = 70
+
+        
+        # Packing = 1, Tourniquet = 2, Pressure = 3
+        self.sensorCalibration = 1 if self.wound == 1 else 1 if self.wound == 2 else 0.5
 
         self.ratio = (self.MAX_MOTOR_SPEED - 100) / (self.upthreshold - 0)
 
@@ -197,7 +198,9 @@ class Simulation:
         GPIO.setup(self.junction, GPIO.OUT)
         if not self.p:
             self.p=GPIO.PWM(self.PUL, 100) #PWM Function is defined can only be initalized once
-        self.SENSOR_ADDRESS = 0x28 if self.wound == 1 else 0x27 if self.wound == 2 else 0x26
+
+
+        self.SENSOR_ADDRESS = 0x28 if self.wound == 1 else 0x26 if self.wound == 2 else 0x27
 
 
         # TODO Currently this is throwing an error
@@ -266,6 +269,8 @@ class Simulation:
             self.LOAD_SENSOR_DATA=self.bus.read_byte(0x26)
         self.LBS_DATA_SENSOR=0
 
+        self.filename = (f"Trials/test.txt")
+
 
 
     #========================================================================
@@ -296,7 +301,7 @@ class Simulation:
         # returns correct 2 bytes after inital read
         self.LBS_DATA_SENSOR=((self.LOAD_SENSOR_DATA[0]&63)*2**8 + self.LOAD_SENSOR_DATA[1] - 1000)*100/14000
 
-        self.LBS_DATA_SENSOR = 1 * self.LBS_DATA_SENSOR #TODO: the 1 is for calibration depending on sensor will be a dynamic prop in future
+        self.LBS_DATA_SENSOR = self.sensorCalibration * self.LBS_DATA_SENSOR
         if self.LBS_DATA_SENSOR < 0:
             self.LBS_DATA_SENSOR = 0
         elif self.LBS_DATA_SENSOR > 0 and self.LBS_DATA_SENSOR <= self.upthreshold: 
