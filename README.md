@@ -11,8 +11,12 @@ The unauthorized replication or use of any of the assets in this repository will
 This project is currently unlicensed, but will likely be puruing either a GLPL or another license of some sort.
 
 ## Installation and Usage
-With python3.11 > installed the user should be able to install all the dependencies on a rasberry pi with `pip install -r requirements.txt`
-**Note:** Previous versions had been built with python3.9 but the newer features will require a newer python version.
+**Python 3.11 >" is required**
+1) Clone the Repository
+2) Navigate into the repository
+3) run `chmod u+x install.sh` if the file is not already an executable
+4) run `sudo ./install.sh`
+5) run `reboot` to begin using the application
 
 In the future this section will include how to set up the hardware for the rasberry pi as well.
 
