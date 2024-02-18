@@ -29,6 +29,8 @@ from src.api import API_Network
 network = API_Network("http://tosmcoe0005.ttu.edu:3000")
 from src.sim import Simulation
 simulation = Simulation()
+from src.calibration import Calibration
+calibration = Calibration()
 from src.gui import *
 screen = None
 
@@ -44,20 +46,54 @@ def main():
 # Misleading name as this is called any time the gui window state changes and this actually updates the window
 def simulationBegin(observed_state):
 
-    if observed_state == 4:
-        # Backend Thread
-        worker = threading.Thread(target= lambda: [simulation.begin()])
-        worker.daemon = True
-        worker.start()
+    match observed_state:
+        case 4:
+            # Backend Thread
+            worker = threading.Thread(target= lambda: [simulation.begin()])
+            worker.daemon = True
+            worker.start()
+            # Observation Thread
+            queueObserver = threading.Thread(target= lambda: [screen.handleQueue()])
+            queueObserver.daemon = True
+            queueObserver.start()
 
-        # Observation Thread
-        queueObserver = threading.Thread(target= lambda: [screen.handleQueue()])
-        queueObserver.daemon = True
-        queueObserver.start()
+            queueObserver = threading.Thread(target= lambda: [screen.handleCalibration()])
+            queueObserver.daemon = True
+            queueObserver.start()
+        case 9:
+            calibration.SENSOR_ADDRESS = 0x28
+            calibration.errorthreshold = 40
+            calibration.P = True
+            worker = threading.Thread(target= lambda:[calibration.begin()])
+            worker.daemon = True
+            worker.start()
+        case 10:
+            # Backend Thread
+            calibration.SENSOR_ADDRESS = 0x26
+            calibration.errorthreshold = 40
+            calibration.P = True
+            worker = threading.Thread(target= lambda:[calibration.begin()])
+            worker.daemon = True
+            worker.start()
+
+            queueObserver = threading.Thread(target= lambda: [screen.handleCalibration()])
+            queueObserver.daemon = True
+            queueObserver.start()
+        case 11:
+            calibration.SENSOR_ADDRESS = 0x27
+            calibration.errorthreshold = 70
+            calibration.P = True
+            worker = threading.Thread(target= lambda:[calibration.begin()])
+            worker.daemon = True
+            worker.start()
+
+            queueObserver = threading.Thread(target= lambda: [screen.handleCalibration()])
+            queueObserver.daemon = True
+            queueObserver.start()
+        case _:
+            pass
 
     screen.updateWindow() # Always called when state of window changes
-
-
 
 
 #==================================================================================================

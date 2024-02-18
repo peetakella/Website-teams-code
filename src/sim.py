@@ -33,6 +33,8 @@ class Simulation:
     # Initializer will eventually take parameters from simulation type`
     def __init__(self):
 
+        self.Config = None
+
         self.blood = None
         self.wound = None
         self.sound = None
@@ -96,8 +98,7 @@ class Simulation:
         self.sensorCalibration = 1
 
 
-        #TODO Throw error codes for when and if there is something that can't be in a file name and have them try again
-        self.filename = None #(f"A - Previous Trial.txt")
+        self.filename = None
 
 
     #========================================================================
@@ -108,6 +109,14 @@ class Simulation:
         GPIO.cleanup()
         self.bus.close()
         pygame.mixer.music.stop()
+
+        # Update Config file
+        self.Config["guestfilesSaved"] += 1
+        newConfig = ""
+        for key, value in self.Config.items():
+            newConfig += f"{key}={value}\n"
+        with open("src/config", "w") as file:
+            file.write(newConfig)
         sleep(1)
         self.P = False
         quit()
@@ -157,13 +166,33 @@ class Simulation:
         shuffle(self.moanSounds)
         shuffle(self.presSounds)
 
+        # Check setting and give to sim
+        self.Config= {
+            "packing_sensor": None,
+            "pressure_sensor": None,
+            "tourniquet_sensor": None,
+            "guestfilesSaved": None,
+            "guestMax": None,
+        }
+        with open("src/config", "r") as file:
+            for line in file:
+                key, value = line.split("=")
+                self.Config[key] = int(value)
+
+        if self.Config["guestfilesSaved"] >= self.Config["guestMax"]:
+            self.config["guestfilesSaved"] = 0
+            with open("src/config", "w") as file:
+                for key, value in self.Config.items():
+                    file.write(f"{key}={value}\n")
+                    self.Config[key] = float(value)
+            self.Config["guestfilesSaved"] = int(self.Config["guestfilesSaved"])
+            self.Config["guestMax"] = int(self.Config["guestMax"])
+
         #========================================================================
         # End of reset
-       
-        if self.filename:
-            open(self.filename, "w").close() # resets file so only most resent data is stored
 
-        self.filename = (f"Trials/previousTrial.txt") 
+        trainingType = "Packing" if self.wound == 1 else "Tourniquet" if self.wound == 2 else "Pressure"
+        self.filename = (f"Trials/{trainingType}/GuestTrial_{self.Config['guestfilesSaved']+1}.txt")
         
         self.tic1 = perf_counter()
 
@@ -176,7 +205,7 @@ class Simulation:
 
         
         # Packing = 1, Tourniquet = 2, Pressure = 3
-        self.sensorCalibration = 1 if self.wound == 1 else 1 if self.wound == 2 else 0.5
+        self.sensorCalibration = self.Config["packing_sensor"] if self.wound == 1 else self.Config["tourniquet_sensor"] if self.wound == 2 else self.Config["pressure_sensor"]
 
         self.ratio = (self.MAX_MOTOR_SPEED - 100) / (self.upthreshold - 0)
 
@@ -245,7 +274,6 @@ class Simulation:
 
         self.bus = SMBus(1)                         #I2C channel 1 is connected to the GPIO pins 2 (SDA) and 4 (SCL)
            
-        channel = 1                                 #select channel
         #set up digital io
         GPIO.setwarnings(False)                     #do not show any warnings
         GPIO.setmode (GPIO.BCM)                     #we are programming the GPIO by BCM pin numbers. (PIN35 as ‘GPIO19’)

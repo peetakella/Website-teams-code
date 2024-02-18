@@ -17,7 +17,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from tkinter import filedialog
 
-from main import simulation, network, stateObserver
+from main import simulation, network, stateObserver, calibration
 
 # Formating Constants
 largetitletext = 105
@@ -37,6 +37,8 @@ class Window:
         self._state = 1
         self._root = Tk()
 
+        self.Config = {}
+
         # Simulation Options
         self._wound = IntVar()
         self._blood = IntVar()
@@ -44,6 +46,8 @@ class Window:
 
         self._guest = True
         self._lastisSuccess = None
+
+        self.runningCalibration = None
 
         # Initialize Window
         self._root.title("Better Bleeding Control")
@@ -67,10 +71,18 @@ class Window:
                 self.__DrawWindow4()
             case 5:
                 self.__DrawWindow5()
+            case 6:
+                self.__DrawWindow6()
             case 7:
                 self.__DrawWindow7()
             case 8:
                 self.__DrawWindow8()
+            case 9:
+                self.__DrawWindow9()
+            case 10:
+                self.__DrawWindow10()
+            case 11:
+                self.__DrawWindow11()
             case _:
                 raise ValueError("Invalid State")
         
@@ -84,22 +96,49 @@ class Window:
         self._state = state
         stateObserver.state = state #Notifies all other objects
 
-
     # Method For Changing Guest Demo
     def notGuest(self):
         self._guest = False # prevents a network call after simulation
 
     #==================================================================================================
+    # Methods for Calibration
+    def calbsetOffset(self, offset):
+        calibration.offSet = offset
+
+    def endCalb(self):
+        calibration.P = False
+
+    # 1 = Packing, 2 = Tourniquet, 3 = Pressure
+    def saveNewCalb(self, newOffset, sensor):
+        if sensor == 1:
+            self.Config["packing_sensor"] = newOffset
+        elif sensor == 2:
+            self.Config["tourniquet_sensor"] = newOffset
+        elif sensor == 3:
+            self.Config["pressure_sensor"] = newOffset
+
+        newConfig = ""
+        for key, value in self.Config.items():
+            newConfig += f"{key}={value}\n"
+
+        with open("src/config", "w") as file:
+            file.write(newConfig)
+
+    def updateRunningCalb(self, newOffset):
+        calibration.offSet = newOffset
+
+
+    #==================================================================================================
     # Drawing Methods
 
     # Home Window
-    def __DrawWindow1(self):
-        
+    def __DrawWindow1(self): 
+
+        # Button on bottom for settings
 
         frame1 = LabelFrame(self._frame, pady=25, fg="black", bg="gray75")
 
-        frame1.place(x=.025*w, y=.025*h, height=.2*h, width=.95*w)
-
+        frame1.place(x=.025*w, y=.025*h, height=.2*h, width=.95*w) 
 
         # Add a label at the top of the window
         label_home = Label(frame1, text="Hemorrhage Control Trainer", font=("Arial", largetitletext), fg="black", bg="gray75")
@@ -109,9 +148,14 @@ class Window:
 
         # Add two buttons underneath the label of home page
         button_scenario = Button(self._frame, text="Choose\nScenario", command = lambda: [self._destroy_UpdateState(3)], bg="firebrick3",fg="white",  font=("Arial", largetitletext), padx=10, pady=200)
-        button_scenario.place(x=.025*w, y=.25*h, height=.675*h, width=.47*w)
+        button_scenario.place(x=.025*w, y=.25*h, height=.550*h, width=.47*w)
         button_retrieve = Button(self._frame, text="Retrieve\nData", command = lambda: [self._destroy_UpdateState(2)], bg="firebrick3",fg="white", font=("Arial", largetitletext), padx=10, pady=200)
-        button_retrieve.place(x=.5025*w, y=.25*h, height=.675*h, width=.47*w)
+        button_retrieve.place(x=.5025*w, y=.25*h, height=.550*h, width=.47*w)
+
+        # Add button for settings
+        button_settings = Button(self._frame, text="Settings", command = lambda: [self._destroy_UpdateState(6)], bg="firebrick3",fg="white", font=("Arial", largetext))
+        button_settings.place(x=(0.5*w)-150, y=.815*h, height=.10*h, width=300)
+
 
     # Data Retrieval Window
     # The author of this window is not listed above I am unsure of the name
@@ -174,7 +218,8 @@ class Window:
 
     # Simulation SetupWindow
     def __DrawWindow3(self):
-        button_scenario =  Button(self._frame, text="Begin", command= lambda: [self._destroy_UpdateState(8)], font=("Arial", largetitletext), bg="firebrick3", fg="white", state='disabled')
+        # TODO: Change to state 8 if Netowork is fixed
+        button_scenario =  Button(self._frame, text="Begin", command= lambda: [self._destroy_UpdateState(4)], font=("Arial", largetitletext), bg="firebrick3", fg="white", state='disabled')
 
         def updateScenarioButtonState():
             button_scenario['state'] = 'normal' if self._wound and self._blood and self._sound else 'disabled'
@@ -237,7 +282,8 @@ class Window:
         checkbox_off.grid(row=1, column=1,padx=0,  pady=0)
 
         #Button to enter scenario in middle frame
-        button_scenario = Button(self._frame, text="Begin", command= lambda: [self.updateOptions(), self._destroy_UpdateState(8)], font=("Arial", largetitletext), bg="firebrick3", fg="white", state='disabled')
+        # TODO: Change to state 8 if Netowork is fixed
+        button_scenario = Button(self._frame, text="Begin", command= lambda: [self.updateOptions(), self._destroy_UpdateState(4)], font=("Arial", largetitletext), bg="firebrick3", fg="white", state='disabled')
         button_scenario.place(x=.345*w, y=.6*h, height=.15*h, width=.3*w)
 
         button_quit = Button(self._frame, text="Home", command = lambda: [self._destroy_UpdateState(1)],  font=("Arial", largetitletext),bg="firebrick3",fg="white")
@@ -342,6 +388,46 @@ class Window:
         button_retrieve = Button(self._frame, text="Select\nNew User", command = lambda: [self._destroy_UpdateState(8)], bg="firebrick3",fg="white", font=("Arial", largetitletext), padx=10, pady=200)
         button_retrieve.place(x=.5025*w, y=.25*h, height=.675*h, width=.47*w)
 
+    # Settings Window
+    def __DrawWindow6(self):
+        # Show the Sensor Calibrations in buttons
+
+        #Add Title frame
+        framet = LabelFrame(self._frame,fg="black", bg="gray75")
+        framet.place(x=.025*w, y=.025*h, height=.2*h, width=.95*w)
+
+        # Add a label at the top of the window
+        label_scenario = Label(framet, text="Settings", font=("Arial", largetitletext), fg="black", bg="gray75", pady = 15)
+        label_scenario.pack(fill = X)
+
+        # Add 3 Frames
+        frameL = LabelFrame(self._frame, bg="firebrick3", fg="white")
+        frameL.place(x=.015*w, y=.25*h, height=.675*h, width=.3*w)
+
+        frameM = LabelFrame(self._frame, bg="firebrick3", fg="white")
+        frameM.place(x=.345*w, y=.25*h, height=.675*h, width=.3*w)
+
+        frameR = LabelFrame(self._frame, bg="firebrick3", fg="white")
+        frameR.place(x=.675*w, y=.25*h, height=.675*h, width=.3*w)
+
+        
+        with open("src/config", "r") as file:
+            for line in file:
+                key, value = line.split("=")
+                self.Config[key] = float(value)
+
+            self.Config["guestfilesSaved"] = int(self.Config["guestfilesSaved"])
+            self.Config["guestMax"] = int(self.Config["guestMax"])
+
+        # Add Buttons that Show Current Configurations
+        buttonSetPressure = Button(frameL, text="Pressure\nOffset:\n" + str(self.Config["pressure_sensor"]), font=("Arial", largetext), bg="firebrick4", fg="white", command = lambda: [self.calbsetOffset(self.Config["pressure_sensor"]),self._destroy_UpdateState(9)])
+        buttonSetPressure.grid(row=0, column=0, padx=150, pady=250)
+
+        buttonSetTourniquet = Button(frameM, text="Tourniquet\nOffset:\n" + str(self.Config["tourniquet_sensor"]), font=("Arial", largetext), bg="firebrick4", fg="white", command = lambda: [self.calbsetOffset(self.Config["tourniquet_sensor"]),self._destroy_UpdateState(10)])
+        buttonSetTourniquet.grid(row=0, column=0, padx=125, pady=250)
+
+        buttonSetPacking = Button(frameR, text="Packing\nOffset:\n" + str(self.Config["packing_sensor"]), font=("Arial", largetext), bg="firebrick4", fg="white", command = lambda: [self.calbsetOffset(self.Config["packing_sensor"]),self._destroy_UpdateState(11)])
+        buttonSetPacking.grid(row=0, column=0, padx=150, pady=250)
 
 
     # Post Simulation Graph Analysis Window
@@ -472,10 +558,210 @@ class Window:
        
         populate_listbox()
 
+
+    # Pressure Sensor Calibration Window
+    def __DrawWindow9(self):
+        # Add Title frame
+        framet = LabelFrame(self._frame,fg="black", bg="gray75")
+        framet.place(x=.025*w, y=.025*h, height=.2*h, width=.95*w)
+        # Add a label at the top of the window
+        label_scenario = Label(framet, text="Pressure Sensor Calibration", font=("Arial", largetitletext), fg="black", bg="gray75", pady = 15)
+        label_scenario.pack(fill = X)
+
+        # Frame for Progbar 
+        pressureFrame = LabelFrame(self._frame, bg="firebrick3", fg="white")
+        pressureFrame.place(x=.70*w, y=.25*h, height=.700*h, width=.25*w)
+
+        # Frame for buttons
+        buttonFrame = LabelFrame(self._frame, bg="firebrick3", fg="white")
+        buttonFrame.place(x=.025*w, y=.25*h, height=.700*h, width=.65*w)
+
+        self.runningCalibration = float(self.Config["pressure_sensor"])
+
+        # Label to Display Running Calibration
+        label_calb = Label(buttonFrame, text="Current Offset: " + str(self.runningCalibration), font=("Arial", largetext), bg="firebrick3", fg="white")
+        label_calb.grid(row=0, column=0, pady=20)
+
+        def updateCalb(increase):
+            if increase:
+                self.runningCalibration += 0.05
+            else:
+                self.runningCalibration -= 0.05
+            self.runningCalibration = round(self.runningCalibration, 2)
+            label_calb['text'] = "Current Offset: " + str(self.runningCalibration)
+            self.updateRunningCalb(self.runningCalibration)
+
+        # Button to increase pressure sensor offset
+        button_increase = Button(buttonFrame, text="Increase", command = lambda: [updateCalb(True)], bg="firebrick3",fg="white", font=("Arial", largetext))
+        button_increase.grid(row=1, column=0, pady=20)
+
+        # Button to decrease pressure sensor offset
+        button_decrease = Button(buttonFrame, text="Decrease", command = lambda: [updateCalb(False)], bg="firebrick3",fg="white", font=("Arial", largetext))
+        button_decrease.grid(row=2, column=0, pady=20)
+
+        # Button to go back to the settings window
+        button_back = Button(buttonFrame, text="Back", command = lambda: [self.endCalb(),self._destroy_UpdateState(6)], bg="firebrick3",fg="white", font=("Arial", largetext))
+        button_back.grid(row=3, column=0, pady=20)
+
+        # Button to save the new pressure sensor offset
+        button_save = Button(buttonFrame, text="Save", command = lambda: [self.saveNewCalb(self.runningCalibration, 1), self.endCalb(), self._destroy_UpdateState(6)], bg="firebrick3",fg="white", font=("Arial", largetext))
+        button_save.grid(row=4, column=0, pady=20)
+
+        # Progress Bar to show the current values being read
+        progbar = ttk.Progressbar(pressureFrame, length=780, orient="vertical", mode="determinate",takefocus=False, maximum=20)
+        progbar.grid(row=1, column=0, ipadx=325, sticky="n")
+        progbar['value'] = 0
+
+        def updateCalbData(event2):
+            # Dequeue
+            idx = calibration.eventQueue.get()
+            # Update Progress Bar
+            progbar['value'] = calibration.sensorValues[idx]
+
+        self._root.bind("<<event2>>", updateCalbData)
+
+        
+    # Tourniquet Sensor Calibration Window
+    def __DrawWindow10(self):
+
+        # Add Title frame
+        framet = LabelFrame(self._frame,fg="black", bg="gray75")
+        framet.place(x=.025*w, y=.025*h, height=.2*h, width=.95*w)
+        # Add a label at the top of the window
+        label_scenario = Label(framet, text="Tourniquet Sensor Calibration", font=("Arial", largetitletext), fg="black", bg="gray75", pady = 15)
+        label_scenario.pack(fill = X)
+
+        # Frame for Progbar
+        pressureFrame = LabelFrame(self._frame, bg="firebrick3", fg="white")
+        pressureFrame.place(x=.70*w, y=.25*h, height=.700*h, width=.25*w)
+
+        # Frame for buttons
+        buttonFrame = LabelFrame(self._frame, bg="firebrick3", fg="white")
+        buttonFrame.place(x=.025*w, y=.25*h, height=.700*h, width=.65*w)
+
+        self.runningCalibration = float(self.Config["tourniquet_sensor"])
+
+        # Label to Display Running Calibration
+        label_calb = Label(buttonFrame, text="Current Offset: " + str(self.runningCalibration), font=("Arial", largetext), bg="firebrick3", fg="white")
+        label_calb.grid(row=0, column=0, pady=20)
+
+        def updateCalb(increase):
+            if increase:
+                self.runningCalibration += 0.05
+            else:
+                self.runningCalibration -= 0.05
+            self.runningCalibration = round(self.runningCalibration, 2)
+            label_calb['text'] = "Current Offset: " + str(self.runningCalibration)
+            self.updateRunningCalb(self.runningCalibration)
+
+
+        # Button to increase tourniquet sensor offset
+        button_increase = Button(buttonFrame, text="Increase", command = lambda: [updateCalb(True)], bg="firebrick3",fg="white", font=("Arial", largetext))
+        button_increase.grid(row=1, column=0, pady=20)
+
+        # Button to decrease tourniquet sensor offset
+        button_decrease = Button(buttonFrame, text="Decrease", command = lambda: [updateCalb(False)], bg="firebrick3",fg="white", font=("Arial", largetext))
+        button_decrease.grid(row=2, column=0, pady=20)
+
+        # Button to go back to the settings window
+        button_back = Button(buttonFrame, text="Back", command = lambda: [self.endCalb(),self._destroy_UpdateState(6)], bg="firebrick3",fg="white", font=("Arial", largetext))
+        button_back.grid(row=3, column=0, pady=20)
+
+        # Button to save the new tourniquet sensor offset
+        button_save = Button(buttonFrame, text="Save", command = lambda: [self.saveNewCalb(self.runningCalibration, 2), self.endCalb(), self._destroy_UpdateState(6)], bg="firebrick3",fg="white", font=("Arial", largetext))
+        button_save.grid(row=4, column=0, pady=20)
+
+        # Progress Bar to show the current values being read
+        progbar = ttk.Progressbar(pressureFrame, length=780, orient="vertical", mode="determinate",takefocus=False, maximum=20)
+        progbar.grid(row=1, column=0, ipadx=325, sticky="n")
+        progbar['value'] = 0
+
+
+        
+        def updateCalbData(event2):
+            # Dequeue
+            idx = calibration.eventQueue.get()
+            # Update Progress Bar
+            progbar['value'] = calibration.sensorValues[idx]
+
+        self._root.bind("<<event2>>", updateCalbData)
+
+
+    # Packing Sensor Calibration Window
+    def __DrawWindow11(self):
+        # Add Title frame
+        framet = LabelFrame(self._frame,fg="black", bg="gray75")
+        framet.place(x=.025*w, y=.025*h, height=.2*h, width=.95*w)
+        # Add a label at the top of the window
+        label_scenario = Label(framet, text="Packing Sensor Calibration", font=("Arial", largetitletext), fg="black", bg="gray75", pady = 15)
+        label_scenario.pack(fill = X)
+
+       # Frame for Progbar
+        pressureFrame = LabelFrame(self._frame, bg="firebrick3", fg="white")
+        pressureFrame.place(x=.70*w, y=.25*h, height=.700*h, width=.25*w)
+
+        # Frame for buttons
+        buttonFrame = LabelFrame(self._frame, bg="firebrick3", fg="white")
+        buttonFrame.place(x=.025*w, y=.25*h, height=.700*h, width=.65*w)
+
+        self.runningCalibration = float(self.Config["packing_sensor"])
+
+        # Label to Display Running Calibration
+        label_calb = Label(buttonFrame, text="Current Offset: " + str(self.runningCalibration), font=("Arial", largetext), bg="firebrick3", fg="white")
+        label_calb.grid(row=0, column=0, pady=20)
+
+        def updateCalb(increase):
+            if increase:
+                self.runningCalibration += 0.05
+            else:
+                self.runningCalibration -= 0.05
+            self.runningCalibration = round(self.runningCalibration, 2)
+            label_calb['text'] = "Current Offset: " + str(self.runningCalibration)
+            self.updateRunningCalb(self.runningCalibration)
+
+        # Button to increase packing sensor offset
+        button_increase = Button(buttonFrame, text="Increase", command = lambda: [updateCalb(True)], bg="firebrick3",fg="white", font=("Arial", largetext))
+        button_increase.grid(row=1, column=0, pady=20)
+
+        # Button to decrease packing sensor offset
+        button_decrease = Button(buttonFrame, text="Decrease", command = lambda: [updateCalb(False)], bg="firebrick3",fg="white", font=("Arial", largetext))
+        button_decrease.grid(row=2, column=0, pady=20)
+
+        # Button to go back to the settings window
+        button_back = Button(buttonFrame, text="Back", command = lambda: [self.endCalb(),self._destroy_UpdateState(6)], bg="firebrick3",fg="white", font=("Arial", largetext))
+        button_back.grid(row=3, column=0, pady=20)
+
+        # Button to save the new packing sensor offset
+        button_save = Button(buttonFrame, text="Save", command = lambda: [self.saveNewCalb(self.runningCalibration, 3), self.endCalb(), self._destroy_UpdateState(6)], bg="firebrick3",fg="white", font=("Arial", largetext))
+        button_save.grid(row=4, column=0, pady=20)
+
+        # Progress Bar to show the current values being read
+        progbar = ttk.Progressbar(pressureFrame, length=780, orient="vertical", mode="determinate",takefocus=False, maximum=20)
+        progbar.grid(row=1, column=0, ipadx=325, sticky="n")
+        progbar['value'] = 0
+
+        def updateCalbData(event2):
+            # Dequeue
+            idx = calibration.eventQueue.get()
+            # Update Progress Bar
+            progbar['value'] = calibration.sensorValues[idx]
+
+        self._root.bind("<<event2>>", updateCalbData)
+
+
+    #==================================================================================================
+    # Checks if the data queue is empty and if not generates an event
     def handleQueue(self):
         while simulation.P:
             if not simulation.eventQueue.empty():
                 self._root.event_generate("<<event1>>")
+            sleep(0.001)
+        quit()
+
+    def handleCalibration(self):
+        while calibration.P:
+            if not calibration.eventQueue.empty():
+                self._root.event_generate("<<event2>>")
             sleep(0.001)
         quit()
                 
