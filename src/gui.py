@@ -352,7 +352,7 @@ class Window:
 
             # Check if at end
             if type(idx) == bool:
-                if self._guest:
+                if not self._guest:
                     network.submit_TrainingData(simulation.ma_xlist, simulation.timelist, simulation.pressurelist, simulation.blood_loss, idx, self._wound)
       
                 self._lastisSuccess = idx
@@ -405,11 +405,17 @@ class Window:
         frameL.place(x=.015*w, y=.25*h, height=.675*h, width=.3*w)
 
         frameM = LabelFrame(self._frame, bg="firebrick3", fg="white")
-        frameM.place(x=.345*w, y=.25*h, height=.675*h, width=.3*w)
+        frameM.place(x=.345*w, y=.25*h, height=.575*h, width=.3*w)
 
         frameR = LabelFrame(self._frame, bg="firebrick3", fg="white")
         frameR.place(x=.675*w, y=.25*h, height=.675*h, width=.3*w)
 
+        # Add Frame for home button
+        frame_exit = LabelFrame(self._frame, bg="firebrick3", fg="white")
+        frame_exit.place(x=.400*w, y=.835*h, height=.10*h, width=.2*w)
+        button_exit = Button(frame_exit, text="Home", command = lambda: [self._destroy_UpdateState(1)], bg="firebrick3", fg="white", font=("Arial", largetext))
+        button_exit.place(x=0, y=0, height=.10*h, width=.2*w)
+        
         
         with open("src/config", "r") as file:
             for line in file:
@@ -421,13 +427,16 @@ class Window:
 
         # Add Buttons that Show Current Configurations
         buttonSetPressure = Button(frameL, text="Pressure\nOffset:\n" + str(self.Config["pressure_sensor"]), font=("Arial", largetext), bg="firebrick4", fg="white", command = lambda: [self.calbsetOffset(self.Config["pressure_sensor"]),self._destroy_UpdateState(9)])
-        buttonSetPressure.grid(row=0, column=0, padx=150, pady=250)
+        buttonSetPressure.grid(row=0, column=0, padx=125, pady=250)
 
         buttonSetTourniquet = Button(frameM, text="Tourniquet\nOffset:\n" + str(self.Config["tourniquet_sensor"]), font=("Arial", largetext), bg="firebrick4", fg="white", command = lambda: [self.calbsetOffset(self.Config["tourniquet_sensor"]),self._destroy_UpdateState(10)])
-        buttonSetTourniquet.grid(row=0, column=0, padx=125, pady=250)
+        buttonSetTourniquet.grid(row=0, column=0, padx=100, pady=250)
 
         buttonSetPacking = Button(frameR, text="Packing\nOffset:\n" + str(self.Config["packing_sensor"]), font=("Arial", largetext), bg="firebrick4", fg="white", command = lambda: [self.calbsetOffset(self.Config["packing_sensor"]),self._destroy_UpdateState(11)])
         buttonSetPacking.grid(row=0, column=0, padx=150, pady=250)
+
+        # Button to go back Home
+
 
 
     # Post Simulation Graph Analysis Window

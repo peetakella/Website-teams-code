@@ -177,7 +177,7 @@ class Simulation:
         with open("src/config", "r") as file:
             for line in file:
                 key, value = line.split("=")
-                self.Config[key] = int(value)
+                self.Config[key] = float(value)
 
         if self.Config["guestfilesSaved"] >= self.Config["guestMax"]:
             self.config["guestfilesSaved"] = 0
