@@ -108,14 +108,14 @@ class Window:
     def endCalb(self):
         calibration.P = False
 
-    # 1 = Packing, 2 = Tourniquet, 3 = Pressure
+    # 1 = Pressure, 2 = Tourniquet, 3 = Packing
     def saveNewCalb(self, newOffset, sensor):
         if sensor == 1:
-            self.Config["packing_sensor"] = newOffset
+            self.Config["pressure_sensor"] = newOffset
         elif sensor == 2:
             self.Config["tourniquet_sensor"] = newOffset
         elif sensor == 3:
-            self.Config["pressure_sensor"] = newOffset
+            self.Config["packing_sensor"] = newOffset
 
         newConfig = ""
         for key, value in self.Config.items():
@@ -218,8 +218,7 @@ class Window:
 
     # Simulation SetupWindow
     def __DrawWindow3(self):
-        # TODO: Change to state 8 if Netowork is fixed
-        button_scenario =  Button(self._frame, text="Begin", command= lambda: [self._destroy_UpdateState(4)], font=("Arial", largetitletext), bg="firebrick3", fg="white", state='disabled')
+        button_scenario =  Button(self._frame, text="Begin", command= lambda: [self._destroy_UpdateState(8)], font=("Arial", largetitletext), bg="firebrick3", fg="white", state='disabled')
 
         def updateScenarioButtonState():
             button_scenario['state'] = 'normal' if self._wound and self._blood and self._sound else 'disabled'
@@ -282,8 +281,7 @@ class Window:
         checkbox_off.grid(row=1, column=1,padx=0,  pady=0)
 
         #Button to enter scenario in middle frame
-        # TODO: Change to state 8 if Netowork is fixed
-        button_scenario = Button(self._frame, text="Begin", command= lambda: [self.updateOptions(), self._destroy_UpdateState(4)], font=("Arial", largetitletext), bg="firebrick3", fg="white", state='disabled')
+        button_scenario = Button(self._frame, text="Begin", command= lambda: [self.updateOptions(), self._destroy_UpdateState(8)], font=("Arial", largetitletext), bg="firebrick3", fg="white", state='disabled')
         button_scenario.place(x=.345*w, y=.6*h, height=.15*h, width=.3*w)
 
         button_quit = Button(self._frame, text="Home", command = lambda: [self._destroy_UpdateState(1)],  font=("Arial", largetitletext),bg="firebrick3",fg="white")
@@ -426,13 +424,13 @@ class Window:
             self.Config["guestMax"] = int(self.Config["guestMax"])
 
         # Add Buttons that Show Current Configurations
-        buttonSetPressure = Button(frameL, text="Pressure\nOffset:\n" + str(self.Config["pressure_sensor"]), font=("Arial", largetext), bg="firebrick4", fg="white", command = lambda: [self.calbsetOffset(self.Config["pressure_sensor"]),self._destroy_UpdateState(9)])
+        buttonSetPressure = Button(frameL, text="Packing\nOffset:\n" + str(self.Config["packing_sensor"]), font=("Arial", largetext), bg="firebrick4", fg="white", command = lambda: [self.calbsetOffset(self.Config["packing_sensor"]),self._destroy_UpdateState(9)])
         buttonSetPressure.grid(row=0, column=0, padx=125, pady=250)
 
         buttonSetTourniquet = Button(frameM, text="Tourniquet\nOffset:\n" + str(self.Config["tourniquet_sensor"]), font=("Arial", largetext), bg="firebrick4", fg="white", command = lambda: [self.calbsetOffset(self.Config["tourniquet_sensor"]),self._destroy_UpdateState(10)])
         buttonSetTourniquet.grid(row=0, column=0, padx=100, pady=250)
 
-        buttonSetPacking = Button(frameR, text="Packing\nOffset:\n" + str(self.Config["packing_sensor"]), font=("Arial", largetext), bg="firebrick4", fg="white", command = lambda: [self.calbsetOffset(self.Config["packing_sensor"]),self._destroy_UpdateState(11)])
+        buttonSetPacking = Button(frameR, text="Pressure\nOffset:\n" + str(self.Config["pressure_sensor"]), font=("Arial", largetext), bg="firebrick4", fg="white", command = lambda: [self.calbsetOffset(self.Config["pressure_sensor"]),self._destroy_UpdateState(11)])
         buttonSetPacking.grid(row=0, column=0, padx=150, pady=250)
 
         # Button to go back Home
@@ -539,7 +537,7 @@ class Window:
         button_make_request = Button(frameL, text="Connect", font=("Arial", smalltitletext), bg="firebrick4", fg="white", command=lambda: [request()])
         button_make_request.grid(row=2, column=0, padx=40, pady=20)# Button to go back to the home window
 
-        button_start = Button(self._frame, text="Start", command=lambda: [start_simulation()], font=("Arial", largetext), bg="firebrick3", fg="white", state='disabled')
+        button_start = Button(self._frame, text="Start", command=lambda: [self.notGuest(), start_simulation()], font=("Arial", largetext), bg="firebrick3", fg="white", state='disabled')
         button_start.place(x=.345*w, y=.250*h, height=.15*h, width=.3*w)
        
         button_back = Button(self._frame, text="Go Back", command= lambda: [self._destroy_UpdateState(3)], bg="firebrick3", fg="white", font=("Arial", largetext))
@@ -568,13 +566,13 @@ class Window:
         populate_listbox()
 
 
-    # Pressure Sensor Calibration Window
+    # Packing Sensor Calibration Window
     def __DrawWindow9(self):
         # Add Title frame
         framet = LabelFrame(self._frame,fg="black", bg="gray75")
         framet.place(x=.025*w, y=.025*h, height=.2*h, width=.95*w)
         # Add a label at the top of the window
-        label_scenario = Label(framet, text="Pressure Sensor Calibration", font=("Arial", largetitletext), fg="black", bg="gray75", pady = 15)
+        label_scenario = Label(framet, text="Packing Sensor Calibration", font=("Arial", largetitletext), fg="black", bg="gray75", pady = 15)
         label_scenario.pack(fill = X)
 
         # Frame for Progbar 
@@ -585,7 +583,7 @@ class Window:
         buttonFrame = LabelFrame(self._frame, bg="firebrick3", fg="white")
         buttonFrame.place(x=.025*w, y=.25*h, height=.700*h, width=.65*w)
 
-        self.runningCalibration = float(self.Config["pressure_sensor"])
+        self.runningCalibration = float(self.Config["packing_sensor"])
 
         # Label to Display Running Calibration
         label_calb = Label(buttonFrame, text="Current Offset: " + str(self.runningCalibration), font=("Arial", largetext), bg="firebrick3", fg="white")
@@ -613,7 +611,7 @@ class Window:
         button_back.grid(row=3, column=0, pady=20)
 
         # Button to save the new pressure sensor offset
-        button_save = Button(buttonFrame, text="Save", command = lambda: [self.saveNewCalb(self.runningCalibration, 1), self.endCalb(), self._destroy_UpdateState(6)], bg="firebrick3",fg="white", font=("Arial", largetext))
+        button_save = Button(buttonFrame, text="Save", command = lambda: [self.saveNewCalb(self.runningCalibration, 3), self.endCalb(), self._destroy_UpdateState(6)], bg="firebrick3",fg="white", font=("Arial", largetext))
         button_save.grid(row=4, column=0, pady=20)
 
         # Progress Bar to show the current values being read
@@ -696,13 +694,13 @@ class Window:
         self._root.bind("<<event2>>", updateCalbData)
 
 
-    # Packing Sensor Calibration Window
+    # Pressure Sensor Calibration Window
     def __DrawWindow11(self):
         # Add Title frame
         framet = LabelFrame(self._frame,fg="black", bg="gray75")
         framet.place(x=.025*w, y=.025*h, height=.2*h, width=.95*w)
         # Add a label at the top of the window
-        label_scenario = Label(framet, text="Packing Sensor Calibration", font=("Arial", largetitletext), fg="black", bg="gray75", pady = 15)
+        label_scenario = Label(framet, text="Pressure Sensor Calibration", font=("Arial", largetitletext), fg="black", bg="gray75", pady = 15)
         label_scenario.pack(fill = X)
 
        # Frame for Progbar
@@ -713,7 +711,7 @@ class Window:
         buttonFrame = LabelFrame(self._frame, bg="firebrick3", fg="white")
         buttonFrame.place(x=.025*w, y=.25*h, height=.700*h, width=.65*w)
 
-        self.runningCalibration = float(self.Config["packing_sensor"])
+        self.runningCalibration = float(self.Config["pressure_sensor"])
 
         # Label to Display Running Calibration
         label_calb = Label(buttonFrame, text="Current Offset: " + str(self.runningCalibration), font=("Arial", largetext), bg="firebrick3", fg="white")
@@ -741,7 +739,7 @@ class Window:
         button_back.grid(row=3, column=0, pady=20)
 
         # Button to save the new packing sensor offset
-        button_save = Button(buttonFrame, text="Save", command = lambda: [self.saveNewCalb(self.runningCalibration, 3), self.endCalb(), self._destroy_UpdateState(6)], bg="firebrick3",fg="white", font=("Arial", largetext))
+        button_save = Button(buttonFrame, text="Save", command = lambda: [self.saveNewCalb(self.runningCalibration, 1), self.endCalb(), self._destroy_UpdateState(6)], bg="firebrick3",fg="white", font=("Arial", largetext))
         button_save.grid(row=4, column=0, pady=20)
 
         # Progress Bar to show the current values being read

@@ -97,7 +97,6 @@ class Simulation:
 
         self.sensorCalibration = 1
 
-
         self.filename = None
 
 
@@ -192,6 +191,7 @@ class Simulation:
         # End of reset
 
         trainingType = "Packing" if self.wound == 1 else "Tourniquet" if self.wound == 2 else "Pressure"
+        # TODO: change to the user name
         self.filename = (f"Trials/{trainingType}/GuestTrial_{self.Config['guestfilesSaved']+1}.txt")
         
         self.tic1 = perf_counter()

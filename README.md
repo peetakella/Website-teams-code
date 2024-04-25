@@ -1,9 +1,9 @@
 # Stop the Bleed
-Stop the Bleed by Better Bleeding Control is a medical device used to train medical students how to properly stop bleeding out.
+Stop the Bleed by Better Bleeding Control is a medical training simulator used to train individuals how to properly stop bleeding out.
 The simulation has 3 modes:
-    1) Packing
+    1) Wound Packing
     2) Tournequet
-    3) Pressure.
+    3) Direct Pressure
 
 This Repository is the main repository for managing the software that goes into the device and is the property of Better Bleeding Control.
 The unauthorized replication or use of any of the assets in this repository will leave the violator subject to legal repurcussions from Better Bleeding Control.
@@ -12,6 +12,7 @@ This project is currently unlicensed, but will likely be puruing either a GLPL o
 
 ## Installation and Usage
 **Python 3.11 >" is required**
+The Below Steps are used to install the software on a new rasberry pi:
 1) Clone the Repository
 2) Navigate into the repository
 3) run `chmod u+x install.sh` if the file is not already an executable

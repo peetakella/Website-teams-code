@@ -1,5 +1,5 @@
-packing_sensor=1.0
-pressure_sensor=1.0
-tourniquet_sensor=1.0
-guestfilesSaved=4.0
+packing_sensor=0.45
+pressure_sensor=0.65
+tourniquet_sensor=0.65
+guestfilesSaved=34.0
 guestMax=100.0
