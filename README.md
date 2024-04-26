@@ -38,3 +38,9 @@ If there is only a minor change being made to the file then only comment the aut
 
 ### README.md
 This README.md should be read and updated a minimum of once a week during a sprint and once a month in between development sprints.
+
+### Sensor Errors
+At the moment of wirting both of the packing sensors are not working.
+If you run into sensors errors you can run `i2cdetect -y 1` and if all sensors are working you will see 0x26, 0x27, and 0x28
+0x28 is the one that is used for packing.
+On the old arm 0x27 is not working which tournequet, but for our testing we have swapped the pressure and tournequet address for this arm.

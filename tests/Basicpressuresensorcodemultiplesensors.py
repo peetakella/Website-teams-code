@@ -7,14 +7,14 @@ IO.setmode (IO.BCM)         #we are programming the GPIO by BCM pin numbers. (PI
 IO.setup(19,IO.OUT)           # initialize GPIO19 as an output, not important for the pressure sensor or load cell
 #set up i2c
 import time
-import smbus
+import smbus2 as smbus
 from time import sleep
 bus = smbus.SMBus(1) #I2C channel 1 is connected to the GPIO pins 2 (SDA) and 4 (SCL)
 channel = 1          #select channel
 
 #Condition sensor for continuous measurements
 LOAD_SENSOR_ADDRESS1=0x27
-LOAD_SENSOR_ADDRESS2=0x28
+LOAD_SENSOR_ADDRESS2=0x26
 
 dummy_command=0x00
 
